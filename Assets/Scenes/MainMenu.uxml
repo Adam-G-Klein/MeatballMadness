@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; align-items: center; justify-content: center;">
+        <ui:VisualElement style="align-items: center; min-width: 300px;">
+            <ui:Label text="Meatball Madness" name="title-label" style="font-size: 48px; -unity-font-style: bold; margin-bottom: 48px; -unity-text-align: middle-center;"/>
+            <ui:Button text="Host Session" name="host-session-button" style="width: 100%; margin-bottom: 16px; padding: 12px; font-size: 20px;"/>
+            <ui:Button text="Join Session Menu" name="join-session-button" style="width: 100%; margin-bottom: 16px; padding: 12px; font-size: 20px;"/>
+            <ui:Button text="Quick Join Session" name="quick-join-session-button" style="width: 100%; padding: 12px; font-size: 20px;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

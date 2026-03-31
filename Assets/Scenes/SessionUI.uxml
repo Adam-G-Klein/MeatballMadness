@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:Blocks="Blocks.Sessions">
+    <ui:VisualElement style="flex-grow: 1; align-items: center; justify-content: center;">
+        <Blocks:CreateSessionElement />
+    </ui:VisualElement>
+</ui:UXML>

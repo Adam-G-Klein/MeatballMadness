@@ -8,6 +8,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/AdamScene.unity
     guid: 4f95afb0fb49cbf4095366b20271f830
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: 2c11fab1bd9f80a4a9b3e2ccfc60054c
+  - enabled: 1
+    path: Assets/Scenes/LukeScene.unity
+    guid: e2655c184b98b7b4f8af13cf6ff60799
+  - enabled: 1
+    path: Assets/Scenes/JoinMenu.unity
+    guid: 42444c38e17f6b54b8057372b57f8405
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
   m_UseUCBPForAssetBundles: 0
