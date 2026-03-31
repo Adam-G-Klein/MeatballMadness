@@ -17,7 +17,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     {
         _controller = GetComponent<MeatballPhysicsController>();
         _actions = new InputSystem_Actions();
-        //enabled = false; // stay off until OnNetworkSpawn confirms ownership
+        enabled = false; // stay off until OnNetworkSpawn confirms ownership
     }
 
     public override void OnNetworkSpawn()
@@ -48,7 +48,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         _jumpQueued = false;
 
         // RPC work
-        //SubmitInputServerRpc(move, jump);
+        SubmitInputServerRpc(move, jump);
     }
 
     /// <summary>
@@ -67,14 +67,11 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         return new Vector2(worldDir.x, worldDir.z);
     }
 
-// RPC work
-/*
     [ServerRpc]
     private void SubmitInputServerRpc(Vector2 move, bool jump)
     {
         _controller.ReceiveInput(move, jump);
     }
-    */
 
     #region InputSystem_Actions.IPlayerActions
 

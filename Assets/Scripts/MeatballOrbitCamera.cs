@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -50,10 +51,28 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     void Start()
     {
         MeatballSolo meatball = FindFirstObjectByType<MeatballSolo>();
-        if (meatball != null)
+        if (meatball != null) {
             _target = meatball.transform;
-        else
-            Debug.LogWarning("[MeatballOrbitCamera] No MeatballSolo found in scene — camera has no target.");
+        } else
+        {
+            StartCoroutine(searchForMeatball());
+        }
+
+    }
+
+    private IEnumerator searchForMeatball()
+    {
+        // TODO: assign camera on network spawn
+        while(_target == null)
+        {
+            MeatballClientInputHandler meatballClient = FindFirstObjectByType<MeatballClientInputHandler>();
+            if(meatballClient != null)
+            {
+                _target = meatballClient.transform;
+                yield return null;
+            }
+            yield return null;
+        }
     }
 
     void OnEnable()  => _player.Enable();
@@ -96,7 +115,6 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
     public void OnToggleLooking(InputAction.CallbackContext context)
     {
-        Debug.Log("Looking: " + context.ReadValue<float>());
         _lookingToggled = Mathf.Approximately(context.ReadValue<float>(), 1);
     }
 }
