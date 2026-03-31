@@ -1,0 +1,150 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3855724328833214847
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9039742418039606894}
+  m_Layer: 0
+  m_Name: DebugPlayerMeatball
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9039742418039606894
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3855724328833214847}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7361531273708996786}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1093072055799081781
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 9039742418039606894}
+    m_Modifications:
+    - target: {fileID: 438016312355362814, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 438016312355362814, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1518334525
+      objectReference: {fileID: 0}
+    - target: {fileID: 634866817322400418, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1238535911029876582, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_Name
+      value: PlayerMeatball
+      objectReference: {fileID: 0}
+    - target: {fileID: 3367403616109244128, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6286035981066199520}
+  m_SourcePrefab: {fileID: 100100000, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+--- !u!1 &2644544454210883241 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+  m_PrefabInstance: {fileID: 1093072055799081781}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6286035981066199520
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2644544454210883241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 747531569a585cd48a82560a43e2d9a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeatballSolo
+  _moveForce: 15
+  _maxHorizontalSpeed: 8
+  _airControlFraction: 0.25
+  _jumpImpulse: 7
+  _groundCheckRadius: 0.55
+  _groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _linearDrag: 1.5
+  _angularDrag: 1
+  _dynamicFriction: 0.6
+  _staticFriction: 0.6
+  _bounciness: 0
+  _cameraTransform: {fileID: 0}
+--- !u!4 &7361531273708996786 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+  m_PrefabInstance: {fileID: 1093072055799081781}
+  m_PrefabAsset: {fileID: 0}

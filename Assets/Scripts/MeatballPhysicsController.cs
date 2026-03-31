@@ -31,7 +31,7 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsServer) enabled = false;
+        //if (!IsServer) enabled = false;
     }
 
     /// <summary>

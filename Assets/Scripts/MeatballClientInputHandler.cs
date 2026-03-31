@@ -47,7 +47,8 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         bool jump = _jumpQueued;
         _jumpQueued = false;
 
-        SubmitInputServerRpc(move, jump);
+        // RPC work
+        //SubmitInputServerRpc(move, jump);
     }
 
     /// <summary>
@@ -66,11 +67,14 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         return new Vector2(worldDir.x, worldDir.z);
     }
 
+// RPC work
+/*
     [ServerRpc]
     private void SubmitInputServerRpc(Vector2 move, bool jump)
     {
         _controller.ReceiveInput(move, jump);
     }
+    */
 
     #region InputSystem_Actions.IPlayerActions
 
@@ -130,6 +134,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         if (context.performed)
             Debug.Log("[Input] Next");
     }
+    public void OnToggleLooking(InputAction.CallbackContext context) {}
 
     #endregion
 }
