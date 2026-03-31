@@ -184,7 +184,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 15303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 414196fa64b211b4a904f16f96e4761e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -242,6 +242,7 @@ GameObject:
   - component: {fileID: 308134694}
   - component: {fileID: 308134693}
   - component: {fileID: 308134692}
+  - component: {fileID: 308134695}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -321,13 +322,25 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 644336400}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &644336400 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 9039742418039606894, guid: 927d782f622a849469be17c931c3176b, type: 3}
-  m_PrefabInstance: {fileID: 7500140440469719655}
+--- !u!114 &308134695
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 308134691}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff7f7374cb0d4b643bef2b35ce966821, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeatballOrbitCamera
+  _orbitDistance: 8
+  _orbitSpeedH: 180
+  _orbitSpeedV: 120
+  _minPitch: -10
+  _maxPitch: 75
 --- !u!1 &1138026387
 GameObject:
   m_ObjectHideFlags: 0
@@ -819,10 +832,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 9039742418039606894, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 308134694}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 927d782f622a849469be17c931c3176b, type: 3}
 --- !u!1660057539 &9223372036854775807
@@ -834,3 +844,4 @@ SceneRoots:
   - {fileID: 1138026391}
   - {fileID: 110250156}
   - {fileID: 7500140440469719655}
+  - {fileID: 308134694}

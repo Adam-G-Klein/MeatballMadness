@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 /// <summary>
 /// Standalone single-player test-bed for meatball physics and controls.
@@ -74,6 +75,16 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
            + "Defaults to Camera.main if left empty.")]
     [SerializeField] Transform _cameraTransform;
 
+    // ── Latency Simulation ────────────────────────────────────────────────────
+
+    [Header("Latency Simulation")]
+    [Tooltip("Simulated one-way network latency in milliseconds. Models the input delay "
+           + "a client experiences in a host-authoritative session: input travels to the "
+           + "host, the host applies physics, and the result travels back. Set to 0 to "
+           + "disable. Tune this to feel the difference before wiring up real networking.")]
+    [Min(0f)]
+    [SerializeField] float _simulatedLatencyMs = 0f;
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     Rigidbody              _rb;
@@ -82,11 +93,22 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     InputSystem_Actions    _actions;
     InputSystem_Actions.PlayerActions _player;
 
-    Vector2 _moveInput;
-    bool    _jumpQueued;
+    // Raw input — written immediately by input callbacks.
+    Vector2 _rawMoveInput;
+    bool    _rawJumpQueued;
+
     bool    _isGrounded;
 
     bool looking;
+
+    struct InputSnapshot
+    {
+        public float   timestamp;
+        public Vector2 moveInput;
+        public bool    jumpPressed;
+    }
+
+    readonly Queue<InputSnapshot> _inputQueue = new Queue<InputSnapshot>();
 
     // ── Unity Lifecycle ───────────────────────────────────────────────────────
 
@@ -139,22 +161,60 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     void FixedUpdate()
     {
         _isGrounded = CheckGround();
-        ApplyMovement();
-        if (_jumpQueued) ExecuteJump();
+
+        // Snapshot raw input, then retrieve the version delayed by _simulatedLatencyMs.
+        EnqueueSnapshot();
+        DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued);
+
+        ApplyMovement(moveInput);
+        if (jumpQueued) ExecuteJump();
+    }
+
+    // ── Latency queue ─────────────────────────────────────────────────────────
+
+    void EnqueueSnapshot()
+    {
+        _inputQueue.Enqueue(new InputSnapshot
+        {
+            timestamp  = Time.fixedTime,
+            moveInput  = _rawMoveInput,
+            jumpPressed = _rawJumpQueued,
+        });
+        _rawJumpQueued = false; // consumed into the queue; don't double-fire
+    }
+
+    /// <summary>
+    /// Dequeues all snapshots whose timestamp is old enough to satisfy the
+    /// configured latency. Returns the most-recent dequeued move input and
+    /// the logical OR of any jump presses in the drained window.
+    /// When latency is 0 the snapshot enqueued this tick is drained immediately.
+    /// </summary>
+    void DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued)
+    {
+        float threshold = Time.fixedTime - _simulatedLatencyMs / 1000f;
+        moveInput  = Vector2.zero;
+        jumpQueued = false;
+
+        while (_inputQueue.Count > 0 && _inputQueue.Peek().timestamp <= threshold)
+        {
+            InputSnapshot s = _inputQueue.Dequeue();
+            moveInput   = s.moveInput;   // keep latest; older samples are superseded
+            jumpQueued |= s.jumpPressed;
+        }
     }
 
     // ── IPlayerActions ────────────────────────────────────────────────────────
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        _moveInput = context.ReadValue<Vector2>();
+        _rawMoveInput = context.ReadValue<Vector2>();
     }
 
     public void OnJump(InputAction.CallbackContext context)
     {
         // Latch on started so short presses aren't dropped between FixedUpdate ticks.
         if (context.started && _isGrounded)
-            _jumpQueued = true;
+            _rawJumpQueued = true;
     }
 
     public void OnLook(InputAction.CallbackContext context) { }
@@ -173,15 +233,15 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     // ── Movement ──────────────────────────────────────────────────────────────
 
-    void ApplyMovement()
+    void ApplyMovement(Vector2 moveInput)
     {
-        if (_moveInput == Vector2.zero) return;
+        if (moveInput == Vector2.zero) return;
 
         // Don't add more force once the horizontal speed cap is reached.
         Vector3 flatVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
         if (flatVel.magnitude >= _maxHorizontalSpeed) return;
 
-        Vector3 moveDir = BuildCameraRelativeMoveDir(_moveInput.x, _moveInput.y);
+        Vector3 moveDir = BuildCameraRelativeMoveDir(moveInput.x, moveInput.y);
         float   control = _isGrounded ? 1f : _airControlFraction;
         _rb.AddForce(moveDir * _moveForce * control, ForceMode.Force);
     }
@@ -206,7 +266,6 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     void ExecuteJump()
     {
-        _jumpQueued = false;
         // Zero vertical velocity before the impulse so jump height is consistent
         // regardless of whether the meatball was sliding down a slope.
         _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
