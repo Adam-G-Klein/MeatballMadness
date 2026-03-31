@@ -46,7 +46,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 438016312355362814, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1518334525
+      value: 985672028
       objectReference: {fileID: 0}
     - target: {fileID: 634866817322400418, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: m_Enabled
@@ -55,6 +55,10 @@ PrefabInstance:
     - target: {fileID: 1238535911029876582, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2026459723430104527, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
+      propertyPath: m_LinearDamping
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: m_Name
@@ -133,16 +137,17 @@ MonoBehaviour:
   _maxHorizontalSpeed: 8
   _airControlFraction: 0.25
   _jumpImpulse: 7
-  _groundCheckRadius: 0.55
+  _groundCheckRadius: 3
   _groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  _linearDrag: 1.5
-  _angularDrag: 1
+  _linearDrag: 0.05
+  _angularDrag: 0.05
   _dynamicFriction: 0.6
   _staticFriction: 0.6
   _bounciness: 0
   _cameraTransform: {fileID: 0}
+  _simulatedLatencyMs: 0
 --- !u!4 &7361531273708996786 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}

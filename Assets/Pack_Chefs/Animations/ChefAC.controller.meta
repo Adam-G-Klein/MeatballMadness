@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a5835433b926f8841a462e4d41f241a9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 276686
+  packageName: Cartoon Chefs-Pack
+  packageVersion: 1.1
+  assetPath: Assets/Pack_Chefs/Animations/ChefAC.controller
+  uploadId: 830056
