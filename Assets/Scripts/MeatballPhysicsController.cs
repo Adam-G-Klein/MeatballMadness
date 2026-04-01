@@ -93,7 +93,11 @@ public class MeatballPhysicsController : NetworkBehaviour
     /// </summary>
     public void ReceiveInput(Vector2 move, bool jump, bool sprint)
     {
+#if UNITY_EDITOR
         float delaySeconds = _settings.simulatedLatencyMs / 1000f;
+#else
+        float delaySeconds = 0f;
+#endif
         if (delaySeconds <= 0f)
         {
             // No delay — update pending state immediately.

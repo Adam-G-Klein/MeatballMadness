@@ -140,7 +140,11 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     /// </summary>
     void DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued, out bool sprintHeld)
     {
+#if UNITY_EDITOR
         float latencyMs = _settings != null ? _settings.simulatedLatencyMs : 0f;
+#else
+        float latencyMs = 0f;
+#endif
         float threshold = Time.fixedTime - latencyMs / 1000f;
         moveInput = Vector2.zero;
         jumpQueued = false;

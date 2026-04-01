@@ -26,4 +26,4 @@ MonoBehaviour:
   dynamicFriction: 1
   staticFriction: 1
   bounciness: 0
-  simulatedLatencyMs: 200
+  simulatedLatencyMs: 0

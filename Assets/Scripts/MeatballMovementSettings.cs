@@ -63,11 +63,13 @@ public class MeatballMovementSettings : ScriptableObject
     [Range(0f, 1f)]
     public float bounciness = 0f;
 
-    // ── Latency Simulation ────────────────────────────────────────────────────
-
-    [Header("Latency Simulation")]
+    // ── Latency Simulation (Editor only) ─────────────────────────────────────
+#if UNITY_EDITOR
+    [Header("Latency Simulation (Editor Only)")]
     [Tooltip("Simulated one-way network latency in milliseconds. Models the input delay "
-           + "a client experiences in a host-authoritative session. Set to 0 to disable.")]
+           + "a client experiences in a host-authoritative session. Set to 0 to disable. "
+           + "Never applied in builds.")]
     [Min(0f)]
     public float simulatedLatencyMs = 0f;
+#endif
 }
