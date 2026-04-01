@@ -154,7 +154,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   positionSmoothing: 12
   rotationSmoothing: 12
-  snapDistance: 3
+  snapDistance: 6
 --- !u!23 &74463288920666206
 MeshRenderer:
   m_ObjectHideFlags: 0
