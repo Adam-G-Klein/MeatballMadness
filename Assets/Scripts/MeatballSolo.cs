@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Standalone single-player test-bed for meatball physics and controls.
-/// No network dependencies — attach to a sphere GameObject that has a Rigidbody
+/// No network dependencies, attach to a sphere GameObject that has a Rigidbody
 /// and a SphereCollider.
 ///
 /// Input is driven by InputSystem_Actions (IPlayerActions callback interface).
@@ -22,8 +22,11 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     [Tooltip("Continuous force (N) applied each FixedUpdate tick while input is held.")]
     [SerializeField] float _moveForce = 15f;
 
-    [Tooltip("Horizontal speed (m/s) at which force application stops. Acts as a soft cap.")]
-    [SerializeField] float _maxHorizontalSpeed = 8f;
+    [Tooltip("Horizontal speed (m/s) cap while walking.")]
+    [SerializeField] float _maxWalkHorizontalSpeed = 8f;
+
+    [Tooltip("Horizontal speed (m/s) cap while sprinting.")]
+    [SerializeField] float _maxRunHorizontalSpeed = 12f;
 
     [Tooltip("Fraction of moveForce applied while airborne (0 = no air control, 1 = full).")]
     [Range(0f, 1f)]
@@ -87,25 +90,27 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    Rigidbody              _rb;
-    SphereCollider         _col;
-    PhysicsMaterial        _runtimeMat;
-    InputSystem_Actions    _actions;
+    Rigidbody _rb;
+    SphereCollider _col;
+    PhysicsMaterial _runtimeMat;
+    InputSystem_Actions _actions;
     InputSystem_Actions.PlayerActions _player;
 
-    // Raw input — written immediately by input callbacks.
+    // Raw input, written immediately by input callbacks.
     Vector2 _rawMoveInput;
-    bool    _rawJumpQueued;
+    bool _rawJumpQueued;
+    bool _rawSprintHeld;
 
-    bool    _isGrounded;
+    bool _isGrounded;
 
     bool looking;
 
     struct InputSnapshot
     {
-        public float   timestamp;
+        public float timestamp;
         public Vector2 moveInput;
-        public bool    jumpPressed;
+        public bool jumpPressed;
+        public bool sprintHeld;
     }
 
     readonly Queue<InputSnapshot> _inputQueue = new Queue<InputSnapshot>();
@@ -114,7 +119,7 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     void Awake()
     {
-        _rb  = GetComponent<Rigidbody>();
+        _rb = GetComponent<Rigidbody>();
         _col = GetComponent<SphereCollider>();
 
         SyncDragToRigidbody();
@@ -124,7 +129,7 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
             _cameraTransform = Camera.main.transform;
 
         _actions = new InputSystem_Actions();
-        _player  = _actions.Player;
+        _player = _actions.Player;
         _player.AddCallbacks(this);
     }
 
@@ -152,10 +157,12 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         if (_runtimeMat != null)
         {
             _runtimeMat.dynamicFriction = _dynamicFriction;
-            _runtimeMat.staticFriction  = _staticFriction;
-            _runtimeMat.bounciness      = _bounciness;
+            _runtimeMat.staticFriction = _staticFriction;
+            _runtimeMat.bounciness = _bounciness;
         }
-        if (_rb != null) SyncDragToRigidbody();
+
+        if (_rb != null)
+            SyncDragToRigidbody();
     }
 
     void FixedUpdate()
@@ -164,10 +171,12 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
         // Snapshot raw input, then retrieve the version delayed by _simulatedLatencyMs.
         EnqueueSnapshot();
-        DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued);
+        DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued, out bool sprintHeld);
 
-        ApplyMovement(moveInput);
-        if (jumpQueued) ExecuteJump();
+        ApplyMovement(moveInput, sprintHeld);
+
+        if (jumpQueued)
+            ExecuteJump();
     }
 
     // ── Latency queue ─────────────────────────────────────────────────────────
@@ -176,30 +185,34 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     {
         _inputQueue.Enqueue(new InputSnapshot
         {
-            timestamp  = Time.fixedTime,
-            moveInput  = _rawMoveInput,
+            timestamp = Time.fixedTime,
+            moveInput = _rawMoveInput,
             jumpPressed = _rawJumpQueued,
+            sprintHeld = _rawSprintHeld
         });
+
         _rawJumpQueued = false; // consumed into the queue; don't double-fire
     }
 
     /// <summary>
     /// Dequeues all snapshots whose timestamp is old enough to satisfy the
-    /// configured latency. Returns the most-recent dequeued move input and
-    /// the logical OR of any jump presses in the drained window.
+    /// configured latency. Returns the most-recent dequeued move input,
+    /// sprint state, and the logical OR of any jump presses in the drained window.
     /// When latency is 0 the snapshot enqueued this tick is drained immediately.
     /// </summary>
-    void DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued)
+    void DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued, out bool sprintHeld)
     {
         float threshold = Time.fixedTime - _simulatedLatencyMs / 1000f;
-        moveInput  = Vector2.zero;
+        moveInput = Vector2.zero;
         jumpQueued = false;
+        sprintHeld = false;
 
         while (_inputQueue.Count > 0 && _inputQueue.Peek().timestamp <= threshold)
         {
             InputSnapshot s = _inputQueue.Dequeue();
-            moveInput   = s.moveInput;   // keep latest; older samples are superseded
+            moveInput = s.moveInput;
             jumpQueued |= s.jumpPressed;
+            sprintHeld = s.sprintHeld;
         }
     }
 
@@ -218,9 +231,13 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     }
 
     public void OnLook(InputAction.CallbackContext context) { }
-    public void OnToggleLooking(InputAction.CallbackContext context) {}
 
-    public void OnSprint(InputAction.CallbackContext context) { }
+    public void OnToggleLooking(InputAction.CallbackContext context) { }
+
+    public void OnSprint(InputAction.CallbackContext context)
+    {
+        _rawSprintHeld = context.ReadValue<float>() == 1f;
+    }
 
     // ── Ground Check ──────────────────────────────────────────────────────────
 
@@ -233,16 +250,20 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     // ── Movement ──────────────────────────────────────────────────────────────
 
-    void ApplyMovement(Vector2 moveInput)
+    void ApplyMovement(Vector2 moveInput, bool sprintHeld)
     {
-        if (moveInput == Vector2.zero) return;
+        if (moveInput == Vector2.zero)
+            return;
+
+        float currentMaxSpeed = sprintHeld ? _maxRunHorizontalSpeed : _maxWalkHorizontalSpeed;
 
         // Don't add more force once the horizontal speed cap is reached.
         Vector3 flatVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        if (flatVel.magnitude >= _maxHorizontalSpeed) return;
+        if (flatVel.magnitude >= currentMaxSpeed)
+            return;
 
         Vector3 moveDir = BuildCameraRelativeMoveDir(moveInput.x, moveInput.y);
-        float   control = _isGrounded ? 1f : _airControlFraction;
+        float control = _isGrounded ? 1f : _airControlFraction;
         _rb.AddForce(moveDir * _moveForce * control, ForceMode.Force);
     }
 
@@ -255,9 +276,10 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         if (_cameraTransform != null)
         {
             Vector3 forward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up).normalized;
-            Vector3 right   = Vector3.ProjectOnPlane(_cameraTransform.right,   Vector3.up).normalized;
+            Vector3 right = Vector3.ProjectOnPlane(_cameraTransform.right, Vector3.up).normalized;
             return (forward * v + right * h).normalized;
         }
+
         // Fallback: world-space axes.
         return new Vector3(h, 0f, v).normalized;
     }
@@ -276,7 +298,7 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     void SyncDragToRigidbody()
     {
-        _rb.linearDamping  = _linearDrag;
+        _rb.linearDamping = _linearDrag;
         _rb.angularDamping = _angularDrag;
     }
 
@@ -285,14 +307,12 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         _runtimeMat = new PhysicsMaterial("MeatballSolo_Runtime")
         {
             dynamicFriction = _dynamicFriction,
-            staticFriction  = _staticFriction,
-            bounciness      = _bounciness,
-            // Multiply means the effective friction = meatball * ground surface.
-            // Swap to Average if you want a simpler model.
+            staticFriction = _staticFriction,
+            bounciness = _bounciness,
             frictionCombine = PhysicsMaterialCombine.Multiply,
-            bounceCombine   = PhysicsMaterialCombine.Minimum,
+            bounceCombine = PhysicsMaterialCombine.Minimum,
         };
+
         _col.material = _runtimeMat;
     }
-
 }

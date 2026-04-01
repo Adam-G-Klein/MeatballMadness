@@ -71,7 +71,7 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
         transform.position  = _target.position - _currentRotation * Vector3.forward * _orbitDistance;
         transform.LookAt(_target.position, Vector3.up);
 
-        if(!_lookingToggled) return;
+
         // Accumulate orbit angles from Look input.
         _yaw   += _lookInput.x * _orbitSpeedH * Time.deltaTime;
         _pitch  = Mathf.Clamp(
