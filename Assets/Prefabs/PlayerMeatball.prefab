@@ -69,7 +69,7 @@ Rigidbody:
   m_GameObject: {fileID: 3141278423515096476}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 1
+  m_LinearDamping: 0.1
   m_AngularDamping: 5
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
@@ -125,13 +125,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeatballHostController
   ShowTopMostFoldoutHeaderGroup: 1
-  moveForce: 15
-  maxHorizontalSpeed: 8
-  jumpImpulse: 7
-  groundCheckRadius: 0.55
-  groundLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
+  _settings: {fileID: 11400000, guid: 54d9d1d1842e7dd4fb1fbb834545123e, type: 2}
 --- !u!114 &1238535911029876582
 MonoBehaviour:
   m_ObjectHideFlags: 0

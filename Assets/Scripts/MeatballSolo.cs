@@ -7,6 +7,9 @@ using System.Collections.Generic;
 /// No network dependencies, attach to a sphere GameObject that has a Rigidbody
 /// and a SphereCollider.
 ///
+/// All movement tuning lives in a MeatballMovementSettings ScriptableObject so
+/// the same values can be shared with the networked MeatballPhysicsController.
+///
 /// Input is driven by InputSystem_Actions (IPlayerActions callback interface).
 /// Rolling is handled naturally by PhysX friction (rotation is NOT frozen).
 /// Ground friction is applied via a runtime PhysicsMaterial and is tunable live
@@ -16,77 +19,12 @@ using System.Collections.Generic;
 [RequireComponent(typeof(SphereCollider))]
 public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 {
-    // ── Movement ──────────────────────────────────────────────────────────────
-
-    [Header("Movement")]
-    [Tooltip("Continuous force (N) applied each FixedUpdate tick while input is held.")]
-    [SerializeField] float _moveForce = 15f;
-
-    [Tooltip("Horizontal speed (m/s) cap while walking.")]
-    [SerializeField] float _maxWalkHorizontalSpeed = 8f;
-
-    [Tooltip("Horizontal speed (m/s) cap while sprinting.")]
-    [SerializeField] float _maxRunHorizontalSpeed = 12f;
-
-    [Tooltip("Fraction of moveForce applied while airborne (0 = no air control, 1 = full).")]
-    [Range(0f, 1f)]
-    [SerializeField] float _airControlFraction = 0.25f;
-
-    // ── Jump ──────────────────────────────────────────────────────────────────
-
-    [Header("Jump")]
-    [Tooltip("Upward impulse magnitude applied on jump.")]
-    [SerializeField] float _jumpImpulse = 7f;
-
-    [Tooltip("Radius of the overlap sphere used for ground detection. "
-           + "Should roughly match the meatball's collider radius.")]
-    [SerializeField] float _groundCheckRadius = 0.55f;
-
-    [Tooltip("Layers treated as ground for jump detection.")]
-    [SerializeField] LayerMask _groundMask = ~0;
-
-    // ── Drag ──────────────────────────────────────────────────────────────────
-
-    [Header("Drag")]
-    [Tooltip("Linear (translational) damping applied by the Rigidbody each frame.")]
-    [SerializeField] float _linearDrag = 1.5f;
-
-    [Tooltip("Angular damping applied by the Rigidbody each frame. "
-           + "Higher values damp the rolling spin faster.")]
-    [SerializeField] float _angularDrag = 1f;
-
-    // ── Ground Friction (applied to the meatball's PhysicsMaterial) ───────────
-
-    [Header("Ground Friction")]
-    [Tooltip("Dynamic (kinetic) friction coefficient of the meatball surface. "
-           + "Combined (Multiply) with the ground's friction.")]
-    [Range(0f, 1f)]
-    [SerializeField] float _dynamicFriction = 0.6f;
-
-    [Tooltip("Static friction coefficient. Higher values resist starting to slide.")]
-    [Range(0f, 1f)]
-    [SerializeField] float _staticFriction = 0.6f;
-
-    [Tooltip("Bounciness (coefficient of restitution). 0 = no bounce, 1 = perfectly elastic.")]
-    [Range(0f, 1f)]
-    [SerializeField] float _bounciness = 0f;
-
-    // ── Camera ────────────────────────────────────────────────────────────────
+    [SerializeField] MeatballMovementSettings _settings;
 
     [Header("Camera, found in scene on awake")]
     [Tooltip("Transform used to orient movement relative to the camera view. "
            + "Defaults to Camera.main if left empty.")]
     [SerializeField] Transform _cameraTransform;
-
-    // ── Latency Simulation ────────────────────────────────────────────────────
-
-    [Header("Latency Simulation")]
-    [Tooltip("Simulated one-way network latency in milliseconds. Models the input delay "
-           + "a client experiences in a host-authoritative session: input travels to the "
-           + "host, the host applies physics, and the result travels back. Set to 0 to "
-           + "disable. Tune this to feel the difference before wiring up real networking.")]
-    [Min(0f)]
-    [SerializeField] float _simulatedLatencyMs = 0f;
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
@@ -102,8 +40,6 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     bool _rawSprintHeld;
 
     bool _isGrounded;
-
-    bool looking;
 
     struct InputSnapshot
     {
@@ -154,11 +90,13 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     /// </summary>
     void OnValidate()
     {
+        if (_settings == null) return;
+
         if (_runtimeMat != null)
         {
-            _runtimeMat.dynamicFriction = _dynamicFriction;
-            _runtimeMat.staticFriction = _staticFriction;
-            _runtimeMat.bounciness = _bounciness;
+            _runtimeMat.dynamicFriction = _settings.dynamicFriction;
+            _runtimeMat.staticFriction = _settings.staticFriction;
+            _runtimeMat.bounciness = _settings.bounciness;
         }
 
         if (_rb != null)
@@ -169,7 +107,7 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     {
         _isGrounded = CheckGround();
 
-        // Snapshot raw input, then retrieve the version delayed by _simulatedLatencyMs.
+        // Snapshot raw input, then retrieve the version delayed by simulatedLatencyMs.
         EnqueueSnapshot();
         DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued, out bool sprintHeld);
 
@@ -202,7 +140,8 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
     /// </summary>
     void DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued, out bool sprintHeld)
     {
-        float threshold = Time.fixedTime - _simulatedLatencyMs / 1000f;
+        float latencyMs = _settings != null ? _settings.simulatedLatencyMs : 0f;
+        float threshold = Time.fixedTime - latencyMs / 1000f;
         moveInput = Vector2.zero;
         jumpQueued = false;
         sprintHeld = false;
@@ -243,19 +182,19 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     bool CheckGround()
     {
-        // Sphere slightly below center so it only triggers when touching the floor.
-        Vector3 origin = transform.position + Vector3.down * (_groundCheckRadius - 0.05f);
-        return Physics.CheckSphere(origin, _groundCheckRadius, _groundMask, QueryTriggerInteraction.Ignore);
+        if (_settings == null) return false;
+        Vector3 origin = transform.position + Vector3.down * (_settings.groundCheckRadius - 0.05f);
+        return Physics.CheckSphere(origin, _settings.groundCheckRadius, _settings.groundMask, QueryTriggerInteraction.Ignore);
     }
 
     // ── Movement ──────────────────────────────────────────────────────────────
 
     void ApplyMovement(Vector2 moveInput, bool sprintHeld)
     {
-        if (moveInput == Vector2.zero)
+        if (_settings == null || moveInput == Vector2.zero)
             return;
 
-        float currentMaxSpeed = sprintHeld ? _maxRunHorizontalSpeed : _maxWalkHorizontalSpeed;
+        float currentMaxSpeed = sprintHeld ? _settings.maxRunHorizontalSpeed : _settings.maxWalkHorizontalSpeed;
 
         // Don't add more force once the horizontal speed cap is reached.
         Vector3 flatVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
@@ -263,8 +202,8 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
             return;
 
         Vector3 moveDir = BuildCameraRelativeMoveDir(moveInput.x, moveInput.y);
-        float control = _isGrounded ? 1f : _airControlFraction;
-        _rb.AddForce(moveDir * _moveForce * control, ForceMode.Force);
+        float control = _isGrounded ? 1f : _settings.airControlFraction;
+        _rb.AddForce(moveDir * _settings.moveForce * control, ForceMode.Force);
     }
 
     /// <summary>
@@ -288,27 +227,30 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     void ExecuteJump()
     {
+        if (_settings == null) return;
         // Zero vertical velocity before the impulse so jump height is consistent
         // regardless of whether the meatball was sliding down a slope.
         _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        _rb.AddForce(Vector3.up * _jumpImpulse, ForceMode.Impulse);
+        _rb.AddForce(Vector3.up * _settings.jumpImpulse, ForceMode.Impulse);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     void SyncDragToRigidbody()
     {
-        _rb.linearDamping = _linearDrag;
-        _rb.angularDamping = _angularDrag;
+        if (_settings == null) return;
+        _rb.linearDamping = _settings.linearDrag;
+        _rb.angularDamping = _settings.angularDrag;
     }
 
     void CreateAndApplyPhysicsMaterial()
     {
+        if (_settings == null) return;
         _runtimeMat = new PhysicsMaterial("MeatballSolo_Runtime")
         {
-            dynamicFriction = _dynamicFriction,
-            staticFriction = _staticFriction,
-            bounciness = _bounciness,
+            dynamicFriction = _settings.dynamicFriction,
+            staticFriction = _settings.staticFriction,
+            bounciness = _settings.bounciness,
             frictionCombine = PhysicsMaterialCombine.Multiply,
             bounceCombine = PhysicsMaterialCombine.Minimum,
         };

@@ -12,6 +12,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     private InputSystem_Actions _actions;
     private MeatballPhysicsController _controller;
     private bool _jumpQueued;
+    private bool _sprintHeld;
 
     private void Awake()
     {
@@ -48,7 +49,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         _jumpQueued = false;
 
         // RPC work
-        SubmitInputServerRpc(move, jump);
+        SubmitInputServerRpc(move, jump, _sprintHeld);
     }
 
     /// <summary>
@@ -68,9 +69,9 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     }
 
     [ServerRpc]
-    private void SubmitInputServerRpc(Vector2 move, bool jump)
+    private void SubmitInputServerRpc(Vector2 move, bool jump, bool sprint)
     {
-        _controller.ReceiveInput(move, jump);
+        _controller.ReceiveInput(move, jump, sprint);
     }
 
     #region InputSystem_Actions.IPlayerActions
@@ -94,6 +95,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     public void OnSprint(InputAction.CallbackContext context)
     {
+        _sprintHeld = context.ReadValueAsButton();
     }
 
     public void OnToggleLooking(InputAction.CallbackContext context) {}
