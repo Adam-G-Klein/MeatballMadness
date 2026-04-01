@@ -1,8 +1,10 @@
+using System.Threading.Tasks;
 using Blocks.Sessions;
-using Blocks.Sessions.Common;
+using Unity.Services.Multiplayer;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
+using Blocks.Sessions.Common;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(UIDocument))]
 public class MainMenuController : MonoBehaviour
@@ -11,6 +13,8 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] QuickJoinSettings quickJoinSettings;
 
     QuickJoinViewModel m_QuickJoinViewModel;
+    Button m_QuickJoinBtn;
+    Label m_QuickJoinStatusLabel;
 
     void OnEnable()
     {
@@ -24,7 +28,8 @@ public class MainMenuController : MonoBehaviour
 
         var hostBtn = root.Q<Button>("host-session-button");
         var joinBtn = root.Q<Button>("join-session-button");
-        var quickJoinBtn = root.Q<Button>("quick-join-session-button");
+        m_QuickJoinBtn = root.Q<Button>("quick-join-session-button");
+        m_QuickJoinStatusLabel = root.Q<Label>("quick-join-status-label");
 
         if (hostBtn == null) Debug.LogError("MainMenuController: 'host-session-button' not found.");
         else hostBtn.clicked += OnHostSession;
@@ -32,8 +37,8 @@ public class MainMenuController : MonoBehaviour
         if (joinBtn == null) Debug.LogError("MainMenuController: 'join-session-button' not found.");
         else joinBtn.clicked += OnJoinSession;
 
-        if (quickJoinBtn == null) Debug.LogError("MainMenuController: 'quick-join-session-button' not found.");
-        else quickJoinBtn.clicked += OnQuickJoinSession;
+        if (m_QuickJoinBtn == null) Debug.LogError("MainMenuController: 'quick-join-session-button' not found.");
+        else m_QuickJoinBtn.clicked += OnQuickJoinSession;
 
         m_QuickJoinViewModel = new QuickJoinViewModel(sessionSettings != null ? sessionSettings.sessionType : null);
     }
@@ -46,15 +51,16 @@ public class MainMenuController : MonoBehaviour
         {
             var hostBtn = root.Q<Button>("host-session-button");
             var joinBtn = root.Q<Button>("join-session-button");
-            var quickJoinBtn = root.Q<Button>("quick-join-session-button");
 
             if (hostBtn != null) hostBtn.clicked -= OnHostSession;
             if (joinBtn != null) joinBtn.clicked -= OnJoinSession;
-            if (quickJoinBtn != null) quickJoinBtn.clicked -= OnQuickJoinSession;
+            if (m_QuickJoinBtn != null) m_QuickJoinBtn.clicked -= OnQuickJoinSession;
         }
 
         m_QuickJoinViewModel?.Dispose();
         m_QuickJoinViewModel = null;
+        m_QuickJoinBtn = null;
+        m_QuickJoinStatusLabel = null;
     }
 
     void OnHostSession()
@@ -69,20 +75,25 @@ public class MainMenuController : MonoBehaviour
 
     void OnQuickJoinSession()
     {
-        if (sessionSettings == null)
-        {
-            Debug.LogError("SessionSettings is not assigned on MainMenuController.");
-            return;
-        }
-        if (!m_QuickJoinViewModel.AreMultiplayerServicesInitialized())
-        {
-            Debug.LogError("Multiplayer Services are not initialized. Add ServicesInitialization and PlayerAuthentication components to the scene.");
-            return;
-        }
+        _ = QuickJoinAsync();
+    }
 
-        _ = m_QuickJoinViewModel.MatchmakeSessionAsync(
-            quickJoinSettings != null ? quickJoinSettings.ToQuickJoinOptions() : new Unity.Services.Multiplayer.QuickJoinOptions(),
-            sessionSettings.ToSessionOptions()
-        );
+    async Task QuickJoinAsync()
+    {
+        m_QuickJoinBtn.SetEnabled(false);
+        m_QuickJoinStatusLabel.text = "Looking for session...";
+
+        try
+        {
+            var quickJoinOptions = quickJoinSettings != null ? quickJoinSettings.ToQuickJoinOptions() : new QuickJoinOptions();
+            var sessionOptions = sessionSettings != null ? sessionSettings.ToSessionOptions() : new SessionOptions();
+            _ = await MultiplayerService.Instance.MatchmakeSessionAsync(quickJoinOptions, sessionOptions);
+            m_QuickJoinStatusLabel.text = "Joined!";
+        }
+        catch (System.Exception e)
+        {
+            m_QuickJoinStatusLabel.text = $"Failed: {e.Message}";
+            m_QuickJoinBtn.SetEnabled(true);
+        }
     }
 }
