@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: MeatballMovementSettings
   m_EditorClassIdentifier: Assembly-CSharp::MeatballMovementSettings
   moveForce: 80
-  maxWalkHorizontalSpeed: 8
-  maxRunHorizontalSpeed: 15
+  maxWalkHorizontalSpeed: 6
+  maxRunHorizontalSpeed: 25
   airControlFraction: 0
-  jumpImpulse: 30
+  jumpImpulse: 40
   groundCheckRadius: 3
   groundMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 64
   linearDrag: 1
   angularDrag: 1
   dynamicFriction: 1
   staticFriction: 1
   bounciness: 0
-  simulatedLatencyMs: 0
+  simulatedLatencyMs: 200
