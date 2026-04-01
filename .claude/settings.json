@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch",
       "Bash(xargs grep:*)",
-      "Bash(grep -v \"^  m_Name: $\")"
+      "Bash(grep -v \"^  m_Name: $\")",
+      "Bash(2)",
+      "Bash(grep -E \"\\\\.\\(asset|cs\\)$\")"
     ]
   }
 }

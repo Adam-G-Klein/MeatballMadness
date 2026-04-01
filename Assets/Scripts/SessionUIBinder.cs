@@ -16,8 +16,7 @@ using UnityEngine.UIElements;
 /// UnityServicesWithName prefab) somewhere in the scene so that
 /// MultiplayerService.Instance is ready before the player clicks CREATE.
 /// </summary>
-[RequireComponent(typeof(UIDocument))]
-public class SessionUIBinder : MonoBehaviour
+public class SessionUIBinder : MonoBehaviour 
 {
     [SerializeField] SessionSettings _sessionSettings;
 
@@ -25,10 +24,6 @@ public class SessionUIBinder : MonoBehaviour
 
     void Start()
     {
-        // Wire SessionSettings into the UI element so the CREATE button works.
-        var root = GetComponent<UIDocument>().rootVisualElement;
-        root.Q<CreateSessionElement>().SessionSettings = _sessionSettings;
-
         // Watch for session state changes and start NGO accordingly.
         _sessionObserver = new SessionObserver(_sessionSettings.sessionType);
         _sessionObserver.SessionAdded += OnSessionAdded;
@@ -43,7 +38,7 @@ public class SessionUIBinder : MonoBehaviour
 
     void OnSessionAdded(ISession session)
     {
-        if (session is IHostSession)
+        if (session != null && session.IsHost)
             NetworkManager.Singleton.StartHost();
         else
             NetworkManager.Singleton.StartClient();

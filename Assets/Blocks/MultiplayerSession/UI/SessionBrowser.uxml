@@ -6,10 +6,12 @@
                 <ui:DataBinding property="SessionSettings" binding-mode="ToTarget" data-source-path=""/>
             </Bindings>
         </Blocks.Sessions.CreateSessionElement>
-        <Blocks.Sessions.SessionBrowserElement class="blocks-container--stretch">
-            <Bindings>
-                <ui:DataBinding property="SessionSettings" binding-mode="ToTarget" data-source-path=""/>
-            </Bindings>
-        </Blocks.Sessions.SessionBrowserElement>
+        <ui:VisualElement class="blocks-container--stretch">
+            <ui:ListView name="session-list" />
+            <ui:VisualElement name="browser-buttons">
+                <ui:Button name="join-button" text="JOIN" />
+                <ui:Button name="refresh-button" text="REFRESH LIST" />
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

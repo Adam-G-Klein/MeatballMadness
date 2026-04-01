@@ -59,7 +59,7 @@ public class MainMenuController : MonoBehaviour
 
     void OnHostSession()
     {
-        SceneManager.LoadScene("LukeScene");
+        SceneManager.LoadScene("AdamScene");
     }
 
     void OnJoinSession()

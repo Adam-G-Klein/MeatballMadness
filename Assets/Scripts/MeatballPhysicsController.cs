@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -12,6 +13,12 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody), typeof(NetworkObject))]
 public class MeatballPhysicsController : NetworkBehaviour
 {
+    /// <summary>
+    /// All MeatballPhysicsController instances currently running on the server.
+    /// Populated in OnNetworkSpawn (IsServer only); tether force logic reads this list.
+    /// </summary>
+    public static readonly List<MeatballPhysicsController> ServerInstances = new();
+
     [Header("Movement")]
     [SerializeField] private float moveForce = 15f;
     [SerializeField] private float maxHorizontalSpeed = 8f;
@@ -27,11 +34,23 @@ public class MeatballPhysicsController : NetworkBehaviour
     private Vector2 _pendingMove;
     private bool _pendingJump;
 
+    /// <summary>Exposes the Rigidbody for server-side tether force application.</summary>
+    public Rigidbody Rigidbody => _rb;
+
     private void Awake() => _rb = GetComponent<Rigidbody>();
 
     public override void OnNetworkSpawn()
     {
-        //if (!IsServer) enabled = false;
+        if (IsServer)
+        {
+            ServerInstances.Add(this);
+            Debug.Log($"[Tether] Meatball registered. Server count: {ServerInstances.Count}");
+        }
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        ServerInstances.Remove(this);
     }
 
     /// <summary>

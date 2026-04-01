@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: QuickJoinSettings
   m_EditorClassIdentifier: 
   timeout: 5
-  createSession: 1
+  createSession: 0
