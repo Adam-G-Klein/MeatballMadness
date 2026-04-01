@@ -11,10 +11,14 @@ using System;
 public class NetworkManagerBootstrap : MonoBehaviour
 {
     [SerializeField] SessionSettings sessionSettings;
+    IHostSession hostSession;
+
     public async Task<IHostSession> CreateSessionAsync(SessionOptions sessionOptions)
         {
             sessionOptions.Name = sessionSettings.sessionName;
-            return await MultiplayerService.Instance.CreateSessionAsync(sessionOptions);
+            hostSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOptions);
+            Debug.Log($"Session created with id {hostSession.Id}, join code: {hostSession.Code}");
+            return hostSession;
         }
     void Update()
     {

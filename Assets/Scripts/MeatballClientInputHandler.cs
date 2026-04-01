@@ -77,14 +77,10 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (context.performed)
-            Debug.Log($"[Input] Move: {context.ReadValue<Vector2>()}");
     }
 
     public void OnLook(InputAction.CallbackContext context)
     {
-        if (context.performed)
-            Debug.Log($"[Input] Look: {context.ReadValue<Vector2>()}");
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -98,39 +94,8 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     public void OnSprint(InputAction.CallbackContext context)
     {
-        if (context.performed)
-            Debug.Log("[Input] Sprint");
     }
 
-    public void OnCrouch(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-            Debug.Log("[Input] Crouch");
-    }
-
-    public void OnAttack(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-            Debug.Log("[Input] Attack");
-    }
-
-    public void OnInteract(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-            Debug.Log("[Input] Interact");
-    }
-
-    public void OnPrevious(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-            Debug.Log("[Input] Previous");
-    }
-
-    public void OnNext(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-            Debug.Log("[Input] Next");
-    }
     public void OnToggleLooking(InputAction.CallbackContext context) {}
 
     #endregion

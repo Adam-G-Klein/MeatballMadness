@@ -397,7 +397,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
   m_PanelSettings: {fileID: 11400000, guid: 7a38f2dd4a52f3c43802f4f88af54bfe, type: 2}
   m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: ebdf7f22adaadff48967929af5bf49fb, type: 3}
+  sourceAsset: {fileID: 9197481963319205126, guid: c67b7776c0265634fa84b23dc69df916, type: 3}
   m_SortingOrder: 0
   m_Position: 0
   m_WorldSpaceSizeMode: 1
@@ -430,11 +430,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 984621057609452476}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 203f2c9355eb4514f9062db88d0512e1, type: 3}
+  m_Script: {fileID: 11500000, guid: 6fe81ed95e00e95499a9038ddf81499f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Blocks.Sessions::Blocks.Sessions.SessionBrowserController
-  m_SessionSettings: {fileID: 11400000, guid: 0bf4e1684added44da254017c7fc41b2, type: 2}
-  m_MaxSessionsDisplayed: 20
+  m_EditorClassIdentifier: Assembly-CSharp::JoinByCodeUI
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
