@@ -1516,6 +1516,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: DebugPlayerMeatball
       objectReference: {fileID: 0}
+    - target: {fileID: 3855724328833214847, guid: 927d782f622a849469be17c931c3176b, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
       propertyPath: _moveForce
       value: 80

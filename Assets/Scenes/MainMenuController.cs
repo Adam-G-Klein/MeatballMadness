@@ -1,17 +1,11 @@
 using System.Threading.Tasks;
 using Blocks.Sessions;
-using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Blocks.Sessions.Common;
-using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(UIDocument))]
 public class MainMenuController : MonoBehaviour
 {
-    [SerializeField] SessionSettings sessionSettings;
-    [SerializeField] QuickJoinSettings quickJoinSettings;
-
     QuickJoinViewModel m_QuickJoinViewModel;
     Button m_QuickJoinBtn;
     Label m_QuickJoinStatusLabel;
@@ -40,7 +34,7 @@ public class MainMenuController : MonoBehaviour
         if (m_QuickJoinBtn == null) Debug.LogError("MainMenuController: 'quick-join-session-button' not found.");
         else m_QuickJoinBtn.clicked += OnQuickJoinSession;
 
-        m_QuickJoinViewModel = new QuickJoinViewModel(sessionSettings != null ? sessionSettings.sessionType : null);
+        m_QuickJoinViewModel = new QuickJoinViewModel(null);
     }
 
     void OnDisable()
@@ -65,12 +59,12 @@ public class MainMenuController : MonoBehaviour
 
     void OnHostSession()
     {
-        SceneManager.LoadScene("LukeScene");
+        MeatballMultiplayerSessionManager.Instance.StartHostFlow();
     }
 
     void OnJoinSession()
     {
-        SceneManager.LoadScene("JoinMenu");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("JoinMenu");
     }
 
     void OnQuickJoinSession()
@@ -85,9 +79,7 @@ public class MainMenuController : MonoBehaviour
 
         try
         {
-            var quickJoinOptions = quickJoinSettings != null ? quickJoinSettings.ToQuickJoinOptions() : new QuickJoinOptions();
-            var sessionOptions = sessionSettings != null ? sessionSettings.ToSessionOptions() : new SessionOptions();
-            _ = await MultiplayerService.Instance.MatchmakeSessionAsync(quickJoinOptions, sessionOptions);
+            await MeatballMultiplayerSessionManager.Instance.QuickJoinAsync();
             m_QuickJoinStatusLabel.text = "Joined!";
         }
         catch (System.Exception e)

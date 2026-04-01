@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6478660667253564191}
   - component: {fileID: 762466667879470601}
   - component: {fileID: 1433227417889831046}
+  - component: {fileID: 490309554189394274}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -202,3 +203,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SessionUIBinder
   _sessionSettings: {fileID: 11400000, guid: 0bf4e1684added44da254017c7fc41b2, type: 2}
+--- !u!114 &490309554189394274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5516872695467861085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8eb5ac298ae90ac4e84d8e1caeb5458e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeatballMultiplayerSessionManager
+  sessionSettings: {fileID: 11400000, guid: 0bf4e1684added44da254017c7fc41b2, type: 2}
+  quickJoinSettings: {fileID: 11400000, guid: 342532e706f5ac34582e818ea7e1ae33, type: 2}

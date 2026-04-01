@@ -244,8 +244,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c16e6faa6349ea948b4eb2af96486777, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuController
-  sessionSettings: {fileID: 11400000, guid: 0bf4e1684added44da254017c7fc41b2, type: 2}
-  quickJoinSettings: {fileID: 11400000, guid: 342532e706f5ac34582e818ea7e1ae33, type: 2}
 --- !u!1001 &1378179641
 PrefabInstance:
   m_ObjectHideFlags: 0
