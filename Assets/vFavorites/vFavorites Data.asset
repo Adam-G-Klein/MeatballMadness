@@ -32,6 +32,15 @@ MonoBehaviour:
       isFolder: 0
       isAsset: 1
       _id: 1060581389
+    - globalId:
+        globalObjectIdString: GlobalObjectId_V1-3-54d9d1d1842e7dd4fb1fbb834545123e-11400000-0
+      _typeString: MeatballMovementSettings, Assembly-CSharp, Version=0.0.0.0, Culture=neutral,
+        PublicKeyToken=null
+      _obj: {fileID: 11400000, guid: 54d9d1d1842e7dd4fb1fbb834545123e, type: 2}
+      isSceneGameObject: 0
+      isFolder: 0
+      isAsset: 1
+      _id: 1055211182
     name: Page 1
     _id: 1051527925
   - items: []
