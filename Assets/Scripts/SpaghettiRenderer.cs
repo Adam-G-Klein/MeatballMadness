@@ -10,6 +10,7 @@ using UnityEngine;
 /// The chain does not participate in physics — it is visual-only. Gizmo spheres mark each
 /// Verlet node; swap in a LineRenderer or ribbon mesh later for the real look.
 /// </summary>
+[RequireComponent(typeof(LineRenderer))]
 public class SpaghettiRenderer : MonoBehaviour
 {
     /// <summary>All active SpaghettiRenderer instances. Populated via OnEnable/OnDisable.</summary>
@@ -36,6 +37,17 @@ public class SpaghettiRenderer : MonoBehaviour
              "More iterations = stiffer, less stretchy chain. 2–4 is typical.")]
     [SerializeField, Min(1)] private int _constraintIterations = 3;
 
+    [Tooltip("Layers the ground raycast checks against. Set this to your ground/terrain layer " +
+             "so the chain never clips below the floor.")]
+    [SerializeField] private LayerMask _groundMask = Physics.DefaultRaycastLayers;
+
+    [Tooltip("Radius of the noodle. Interior nodes are kept this far above the ground surface.")]
+    [SerializeField, Min(0f)] private float _noodleThickness = 0.05f;
+
+    [Header("Line Renderer")]
+    [Tooltip("Catmull-Rom subdivisions between each Verlet node. Higher = smoother curve, more verts.")]
+    [SerializeField, Min(1)] private int _smoothingSteps = 8;
+
     [Header("Gizmos")]
     [SerializeField] private float _nodeGizmoRadius = 0.07f;
     [SerializeField] private Color _nodeColor       = new Color(0.95f, 0.6f, 0.2f, 1.00f);
@@ -50,7 +62,12 @@ public class SpaghettiRenderer : MonoBehaviour
 
     private readonly Dictionary<SpaghettiRenderer, Chain> _chains = new();
 
+    private LineRenderer   _lineRenderer;
+    private readonly List<Vector3> _smoothedPoints = new(); // reused buffer to avoid per-frame allocation
+
     // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    private void Awake() => _lineRenderer = GetComponent<LineRenderer>();
 
     private void OnEnable()  => Instances.Add(this);
 
@@ -58,6 +75,7 @@ public class SpaghettiRenderer : MonoBehaviour
     {
         Instances.Remove(this);
         _chains.Clear();
+        if (_lineRenderer != null) _lineRenderer.positionCount = 0;
     }
 
     // ── Simulation ───────────────────────────────────────────────────────────
@@ -67,8 +85,26 @@ public class SpaghettiRenderer : MonoBehaviour
         // Only process pairs where this instance has a lower index than the partner.
         // This guarantees exactly one chain per pair.
         int myIndex = Instances.IndexOf(this);
+
+        bool drewChain = false;
         for (int i = myIndex + 1; i < Instances.Count; i++)
-            StepChain(Instances[i]);
+        {
+            SpaghettiRenderer target = Instances[i];
+            StepChain(target);
+
+            // Drive the LineRenderer with the first chain this instance owns.
+            // (For 2-player this is always the only chain.)
+            if (!drewChain && _lineRenderer != null && _chains.TryGetValue(target, out Chain chain))
+            {
+                UpdateLineRenderer(in chain);
+                drewChain = true;
+            }
+        }
+
+        // If this instance owns no chains (e.g. it is the higher-indexed meatball),
+        // keep the LineRenderer empty so it renders nothing.
+        if (!drewChain && _lineRenderer != null)
+            _lineRenderer.positionCount = 0;
     }
 
     private void StepChain(SpaghettiRenderer target)
@@ -122,6 +158,23 @@ public class SpaghettiRenderer : MonoBehaviour
             }
         }
 
+        // ── Step 4: Ground collision ─────────────────────────────────────────
+        // Cast a short ray downward from each interior node. If the node has
+        // sunk below the surface, push it back up and zero out downward velocity.
+        for (int i = 1; i < total - 1; i++)
+        {
+            Vector3 pos = chain.current[i];
+            if (Physics.Raycast(pos + Vector3.up * 0.1f, Vector3.down, out RaycastHit hit, 0.2f, _groundMask))
+            {
+                float restHeight = hit.point.y + _noodleThickness;
+                if (pos.y < restHeight)
+                {
+                    chain.current[i].y  = restHeight;
+                    chain.previous[i].y = restHeight; // kill downward velocity
+                }
+            }
+        }
+
         _chains[target] = chain;
     }
 
@@ -142,6 +195,55 @@ public class SpaghettiRenderer : MonoBehaviour
             chain.previous[i] = p;  // zero initial velocity
         }
         return chain;
+    }
+
+    // ── Line Renderer ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Writes Catmull-Rom-smoothed positions from the Verlet chain into the LineRenderer.
+    /// Each pair of adjacent nodes is subdivided into <see cref="_smoothingSteps"/> intervals,
+    /// using the neighboring nodes as Catmull-Rom tangent control points so the curve passes
+    /// smoothly through every Verlet node without kinks.
+    /// </summary>
+    private void UpdateLineRenderer(in Chain chain)
+    {
+        int total = chain.current.Length;
+
+        _smoothedPoints.Clear();
+        for (int i = 0; i < total - 1; i++)
+        {
+            // Clamp control points at the chain boundaries by repeating the endpoint.
+            Vector3 p0 = chain.current[Mathf.Max(0,         i - 1)];
+            Vector3 p1 = chain.current[i];
+            Vector3 p2 = chain.current[i + 1];
+            Vector3 p3 = chain.current[Mathf.Min(total - 1, i + 2)];
+
+            for (int s = 0; s < _smoothingSteps; s++)
+            {
+                float t = (float)s / _smoothingSteps;
+                _smoothedPoints.Add(CatmullRom(p0, p1, p2, p3, t));
+            }
+        }
+        _smoothedPoints.Add(chain.current[total - 1]); // final endpoint
+
+        _lineRenderer.positionCount = _smoothedPoints.Count;
+        for (int i = 0; i < _smoothedPoints.Count; i++)
+            _lineRenderer.SetPosition(i, _smoothedPoints[i]);
+    }
+
+    /// <summary>Evaluates a Catmull-Rom spline at <paramref name="t"/> ∈ [0,1] between
+    /// <paramref name="p1"/> and <paramref name="p2"/>, using <paramref name="p0"/> and
+    /// <paramref name="p3"/> as the preceding and following tangent control points.</summary>
+    private static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
+    {
+        float t2 = t * t;
+        float t3 = t2 * t;
+        return 0.5f * (
+             (2f * p1) +
+             (-p0 + p2)                    * t  +
+             (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 +
+             (-p0 + 3f * p1 - 3f * p2 + p3)     * t3
+        );
     }
 
     // ── Gizmos ───────────────────────────────────────────────────────────────
