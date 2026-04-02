@@ -26,4 +26,7 @@ MonoBehaviour:
   dynamicFriction: 1
   staticFriction: 1
   bounciness: 0
+  noodleLength: 10
+  tetherSpringK: 1
+  tetherDamping: 1
   simulatedLatencyMs: 0

@@ -38,6 +38,11 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     private Rigidbody _rb;
 
+    // ── Ramp jump augment ─────────────────────────────────────────────────────
+    private float _jumpHeightRampAugment;
+    // Static buffer avoids per-frame allocation for ground overlap queries.
+    private static readonly Collider[] _groundHits = new Collider[8];
+
     /// <summary>Exposes the Rigidbody for server-side tether force application.</summary>
     public Rigidbody Rigidbody => _rb;
 
@@ -121,6 +126,39 @@ public class MeatballPhysicsController : NetworkBehaviour
         DrainInputQueue();
         ApplyMovement();
         ApplyJump();
+        if (IsServer) ApplyTetherForces();
+    }
+
+    /// <summary>
+    /// Pulls this meatball toward any other registered meatball that has exceeded noodleLength.
+    /// Uses Hooke's law (F = k * stretch) plus a velocity-damping term to prevent oscillation.
+    /// Runs on the host only.
+    /// </summary>
+    private void ApplyTetherForces()
+    {
+        for (int i = 0; i < ServerInstances.Count; i++)
+        {
+            MeatballPhysicsController other = ServerInstances[i];
+            if (other == this) continue;
+
+            Vector3 delta    = other._rb.position - _rb.position;
+            float   distance = delta.magnitude;
+            float   stretch  = distance - _settings.noodleLength;
+            if (stretch <= 0f) continue;
+
+            Vector3 axis = delta / distance;
+
+            // Hooke's law spring: pulls this meatball toward other.
+            float springForce = _settings.tetherSpringK * stretch;
+
+            // Damping: damps the rate at which stretch is changing.
+            // Positive stretchRate = meatballs moving apart → adds to pull force.
+            // Negative stretchRate = meatballs closing → reduces pull force, damping overshoot.
+            float stretchRate  = Vector3.Dot(other._rb.linearVelocity - _rb.linearVelocity, axis);
+            float dampingForce = _settings.tetherDamping * stretchRate;
+
+            _rb.AddForce(axis * (springForce + dampingForce), ForceMode.Force);
+        }
     }
 
     /// <summary>
@@ -158,20 +196,63 @@ public class MeatballPhysicsController : NetworkBehaviour
         _rb.AddForce(moveDir * (_settings.moveForce * forceMult), ForceMode.Force);
     }
 
+    private float RampAugmentHeight() => _jumpHeightRampAugment;
+
     private void ApplyJump()
     {
         if (!_pendingJump) return;
         if (!IsGrounded()) return; // hold the latch until we touch down
 
-        _rb.AddForce(Vector3.up * _settings.jumpImpulse, ForceMode.Impulse);
+        _rb.AddForce(Vector3.up * (_settings.jumpImpulse + RampAugmentHeight()), ForceMode.Impulse);
         _pendingJump = false;
     }
 
+    /// <summary>
+    /// Checks whether the meatball is touching ground. As a side effect, updates
+    /// <see cref="_jumpHeightRampAugment"/> when a "Ramp"-layer object is detected:
+    /// augment = dot(horizontalVelocity, rampDirection) * jumpHeightAugment.
+    /// </summary>
     private bool IsGrounded()
     {
-        // Sphere positioned slightly below the meatball origin.
         Vector3 origin = transform.position + Vector3.down * (_settings.groundCheckRadius - 0.05f);
-        return Physics.CheckSphere(origin, _settings.groundCheckRadius, _settings.groundMask,
-                                   QueryTriggerInteraction.Ignore);
+
+        // Combined mask: normal ground layers plus the Ramp layer so ramp objects
+        // are captured in the same query without requiring the designer to add them
+        // to groundMask manually.
+        int rampLayer    = LayerMask.NameToLayer("Ramp");
+        int combinedMask = _settings.groundMask | (1 << rampLayer);
+
+        int hitCount = Physics.OverlapSphereNonAlloc(origin, _settings.groundCheckRadius,
+                                                     _groundHits, combinedMask,
+                                                     QueryTriggerInteraction.Ignore);
+
+        _jumpHeightRampAugment = 0f;
+        for (int i = 0; i < hitCount; i++)
+        {
+            if (_groundHits[i].gameObject.layer != rampLayer) continue;
+
+            if (!_groundHits[i].TryGetComponent(out RampSettings ramp)) break;
+
+            Vector2 horizontalVel = new(_rb.linearVelocity.x, _rb.linearVelocity.z);
+            _jumpHeightRampAugment = Vector2.Dot(horizontalVel, ramp.rampDirection) * ramp.jumpHeightAugment;
+            break;
+        }
+
+        return hitCount > 0;
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (_settings == null) return;
+
+        // Only draw each pair once: the lower-indexed meatball owns the line.
+        int myIndex = ServerInstances.IndexOf(this);
+        for (int i = myIndex + 1; i < ServerInstances.Count; i++)
+        {
+            MeatballPhysicsController other = ServerInstances[i];
+            float distance = Vector3.Distance(transform.position, other.transform.position);
+            Gizmos.color = distance > _settings.noodleLength ? Color.red : Color.blue;
+            Gizmos.DrawLine(transform.position, other.transform.position);
+        }
     }
 }

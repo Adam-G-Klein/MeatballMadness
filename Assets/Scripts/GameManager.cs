@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
 
     private int _nextSpawnIndex;
 
-    private void Awake()
+    void Start()
     {
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;

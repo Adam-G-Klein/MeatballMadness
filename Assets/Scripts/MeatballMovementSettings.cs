@@ -63,6 +63,23 @@ public class MeatballMovementSettings : ScriptableObject
     [Range(0f, 1f)]
     public float bounciness = 0f;
 
+    // ── Tether ────────────────────────────────────────────────────────────────
+
+    [Header("Tether")]
+    [Tooltip("Maximum separation (m) before the tether starts pulling the meatballs together.")]
+    [Min(0f)]
+    public float noodleLength = 6f;
+
+    [Tooltip("Hooke's law spring constant (N/m). Higher values make the tether stiffer.")]
+    [Min(0f)]
+    public float tetherSpringK = 20f;
+
+    [Tooltip("Velocity damping coefficient along the tether axis. "
+           + "Reduces oscillation — set higher to make the tether feel 'sticky', "
+           + "lower to let it bounce.")]
+    [Min(0f)]
+    public float tetherDamping = 3f;
+
     // ── Latency Simulation (Editor only) ─────────────────────────────────────
 #if UNITY_EDITOR
     [Header("Latency Simulation (Editor Only)")]

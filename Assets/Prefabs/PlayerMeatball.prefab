@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 3367403616109244128}
   - component: {fileID: 74463288920666206}
   - component: {fileID: 2203546238478198152}
+  - component: {fileID: 1845387534074825289}
   m_Layer: 0
   m_Name: PlayerMeatball
   m_TagString: Untagged
@@ -212,3 +213,23 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3141278423515096476}
   m_Mesh: {fileID: 7059662277358479494, guid: 9c83699d1f5228f4984de566e18d6007, type: 3}
+--- !u!114 &1845387534074825289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141278423515096476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c74077f5598c2148a85a188dbea5cf2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpaghettiRenderer
+  _nodeCount: 6
+  _tetherRestLength: 10
+  _gravityScale: 0.4
+  _damping: 0.97
+  _constraintIterations: 3
+  _nodeGizmoRadius: 0.07
+  _nodeColor: {r: 0.29565808, g: 0.9490196, b: 0.19999999, a: 1}
+  _lineColor: {r: 0.95, g: 0.6, b: 0.2, a: 0.55}
