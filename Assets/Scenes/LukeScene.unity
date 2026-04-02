@@ -1492,6 +1492,10 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 985672028
       objectReference: {fileID: 0}
+    - target: {fileID: 666386224726670539, guid: 927d782f622a849469be17c931c3176b, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1383785273652897530, guid: 927d782f622a849469be17c931c3176b, type: 3}
       propertyPath: m_Mass
       value: 2
@@ -1518,7 +1522,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3855724328833214847, guid: 927d782f622a849469be17c931c3176b, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
       propertyPath: _moveForce
@@ -1602,10 +1606,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 7361531273708996786, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1363550896}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 927d782f622a849469be17c931c3176b, type: 3}
 --- !u!1 &185543433
@@ -5731,82 +5732,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 440532012}
   m_LocalEulerAnglesHint: {x: 0, y: -30, z: 0}
---- !u!1001 &787551163
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 899898581}
-    m_Modifications:
-    - target: {fileID: 2831042624132910028, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_WarningMessage
-      value: "\nBinding warning: Some generic clip(s) animate transforms that are
-        already bound by a Humanoid avatar. These transforms can only be changed
-        by Humanoid clips.\n\tTransform 'LeftForeArm'\n\tTransform 'LeftArm'\n\tFrom
-        animation clip 'idle_pose'"
-      objectReference: {fileID: 0}
-    - target: {fileID: 4934238353472124527, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_Name
-      value: Chef 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.034698486
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.8215027
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.13699913
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 90
-      objectReference: {fileID: 0}
-    - target: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
 --- !u!1 &809155238
 GameObject:
   m_ObjectHideFlags: 0
@@ -6256,11 +6181,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 440532012}
   m_LocalEulerAnglesHint: {x: 0, y: -30, z: 0}
---- !u!4 &899898581 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7361531273708996786, guid: 927d782f622a849469be17c931c3176b, type: 3}
-  m_PrefabInstance: {fileID: 172936522}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &904657716
 GameObject:
   m_ObjectHideFlags: 0
@@ -9688,11 +9608,6 @@ Transform:
   - {fileID: 1138026391}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &1363550896 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8797432681240855688, guid: 73dccca79157e22499c1de99fff8b9b7, type: 3}
-  m_PrefabInstance: {fileID: 787551163}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1387192435 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100000, guid: d72dd8fb4dd2633468bce666db5638df, type: 3}

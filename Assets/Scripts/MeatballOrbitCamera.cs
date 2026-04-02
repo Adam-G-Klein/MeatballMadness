@@ -118,9 +118,14 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
         _smoothedPivot = Vector3.MoveTowards(_smoothedPivot, _target.position, speed * Time.deltaTime);
 
         // Accumulate orbit angles from Look input.
-        _yaw   += _lookInput.x * _orbitSpeedH * Time.deltaTime;
+#if UNITY_EDITOR
+        Vector2 effectiveLook = _lookingToggled ? _lookInput : Vector2.zero;
+#else
+        Vector2 effectiveLook = _lookInput;
+#endif
+        _yaw   += effectiveLook.x * _orbitSpeedH * Time.deltaTime;
         _pitch  = Mathf.Clamp(
-            _pitch - _lookInput.y * _orbitSpeedV * Time.deltaTime, // subtract: stick-up decreases pitch
+            _pitch - effectiveLook.y * _orbitSpeedV * Time.deltaTime, // subtract: stick-up decreases pitch
             _minPitch, _maxPitch);
 
         _currentRotation = Quaternion.Euler(_pitch, _yaw, 0f);

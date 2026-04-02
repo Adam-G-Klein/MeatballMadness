@@ -1,18 +1,13 @@
 using UnityEngine;
 
 /// <summary>
-/// Spawns the AnimatedChef prefab in worldspace and keeps it directly above
-/// the meatball each frame.
+/// Spawns the AnimatedChef prefab in worldspace. Position tracking is handled
+/// by the ChefAnimator component on the spawned prefab.
 /// </summary>
 public class MeatballChefController : MonoBehaviour
 {
     [Header("Chef")]
     [SerializeField] GameObject _chefPrefab;
-
-    [Tooltip("Height above the meatball's center.")]
-    [SerializeField] float _heightOffset = 1.2f;
-
-    // ── Internals ──────────────────────────────────────────────────────────────
 
     GameObject _chefInstance;
 
@@ -24,15 +19,8 @@ public class MeatballChefController : MonoBehaviour
             return;
         }
 
-        Vector3 spawnPos = transform.position + Vector3.up * _heightOffset;
-        _chefInstance = Instantiate(_chefPrefab, spawnPos, Quaternion.identity);
-    }
-
-    void LateUpdate()
-    {
-        if (_chefInstance == null) return;
-
-        _chefInstance.transform.position = transform.position + Vector3.up * _heightOffset;
+        _chefInstance = Instantiate(_chefPrefab, transform.position, Quaternion.identity);
+        _chefInstance.GetComponent<ChefAnimator>()?.SetFollowTarget(transform);
     }
 
     void OnDestroy()
