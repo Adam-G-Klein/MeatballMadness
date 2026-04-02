@@ -89,7 +89,7 @@ Shader "Meatball/SpaghettiNoodle"
                 float2 uv           : TEXCOORD0;
                 float3 positionWS   : TEXCOORD1;
                 float3 normalWS     : TEXCOORD2;
-                float3 bitangentWS  : TEXCOORD3;  // across-noodle axis in world space
+                float3 tangentWS    : TEXCOORD3;  // along-noodle axis in world space
                 float  fogFactor    : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -108,7 +108,7 @@ Shader "Meatball/SpaghettiNoodle"
                 OUT.positionWS  = vpi.positionWS;
                 OUT.uv          = IN.uv;
                 OUT.normalWS    = vni.normalWS;
-                OUT.bitangentWS = vni.bitangentWS;
+                OUT.tangentWS   = vni.tangentWS;
                 OUT.fogFactor   = ComputeFogFactor(vpi.positionCS.z);
                 return OUT;
             }
@@ -118,17 +118,23 @@ Shader "Meatball/SpaghettiNoodle"
             {
                 // ── Fake cylindrical normal ───────────────────────────────────
                 // UV.y runs 0→1 across the quad width (left edge → right edge).
-                // We treat the noodle cross-section as a half-cylinder:
-                //   - bitangent component  nx = uv.y * 2 - 1       (−1..+1 across width)
-                //   - outward (normal) nz  = sqrt(1 − nx²)         (top of arc = 1)
-                // Blending with geometry normal keeps edges from flipping hard.
+                // We reconstruct the cylinder cross-section axes from world-up and
+                // the noodle tangent — this is view-INDEPENDENT, so the highlight
+                // stays on top of the noodle regardless of camera angle.
+                //
+                //   cylUp    = worldUp projected perpendicular to tangent ("top of noodle")
+                //   cylRight = tangent × cylUp                             ("side of noodle")
+                //
+                // nx maps UV.y to −1..+1 across the width; nz is the outward arc height.
+                float3 T        = normalize(IN.tangentWS);
+                float3 worldUp  = float3(0, 1, 0);
+                float3 cylUp    = normalize(worldUp - T * dot(T, worldUp));
+                float3 cylRight = normalize(cross(T, cylUp));
+
                 float  nx  = IN.uv.y * 2.0 - 1.0;
                 float  nz  = sqrt(max(0.0001, 1.0 - nx * nx));
 
-                float3 cylinderN = normalize(
-                    IN.normalWS    * nz +
-                    IN.bitangentWS * nx
-                );
+                float3 cylinderN = normalize(cylUp * nz + cylRight * nx);
                 float3 N = normalize(lerp(IN.normalWS, cylinderN, _CylinderBlend));
 
                 // View and half-vector
