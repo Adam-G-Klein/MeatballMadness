@@ -58,6 +58,7 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         _rb = GetComponent<Rigidbody>();
         _col = GetComponent<SphereCollider>();
 
+        _rb.interpolation = RigidbodyInterpolation.Interpolate;
         SyncDragToRigidbody();
         CreateAndApplyPhysicsMaterial();
 

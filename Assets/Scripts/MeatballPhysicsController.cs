@@ -49,6 +49,7 @@ public class MeatballPhysicsController : NetworkBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
+        _rb.interpolation = RigidbodyInterpolation.Interpolate;
         ApplyRigidbodySettings();
         ApplyPhysicsMaterial();
     }

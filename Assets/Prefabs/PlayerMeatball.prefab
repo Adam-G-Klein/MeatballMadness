@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 2203546238478198152}
   - component: {fileID: 1845387534074825289}
   - component: {fileID: 5773202127583854617}
+  - component: {fileID: 1933546644954696675}
   m_Layer: 0
   m_Name: PlayerMeatball
   m_TagString: Untagged
@@ -349,3 +350,19 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!114 &1933546644954696675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141278423515096476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23816e40f1da51949a5e6e13dfdeccdc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeatballChefController
+  _chefPrefab: {fileID: 3422403236833232616, guid: 2054e6952f59b7a48b28ae205476083e, type: 3}
+  _heightOffset: 1.2
+  _positionFollowSpeed: 12
+  _snapDistance: 5

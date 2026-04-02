@@ -11,6 +11,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 {
     private InputSystem_Actions _actions;
     private MeatballPhysicsController _controller;
+    private Vector2 _rawMove;
     private bool _jumpQueued;
     private bool _sprintHeld;
 
@@ -41,8 +42,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     private void FixedUpdate()
     {
-        Vector2 rawMove = _actions.Player.Move.ReadValue<Vector2>();
-        Vector2 move = ToCameraRelativeInput(rawMove);
+        Vector2 move = ToCameraRelativeInput(_rawMove);
 
         // Consume the queued jump — latch is set by the callback, cleared here.
         bool jump = _jumpQueued;
@@ -78,6 +78,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     public void OnMove(InputAction.CallbackContext context)
     {
+        _rawMove = context.ReadValue<Vector2>();
     }
 
     public void OnLook(InputAction.CallbackContext context)
