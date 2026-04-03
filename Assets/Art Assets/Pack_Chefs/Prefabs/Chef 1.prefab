@@ -194,14 +194,14 @@ MonoBehaviour:
   m_Data:
     m_Root: {fileID: 7768146500403973200}
     m_Mid: {fileID: 448211484923573795}
-    m_Tip: {fileID: 1071601034723696085}
+    m_Tip: {fileID: 5318558282524284960}
     m_Target: {fileID: 5859367984014804520}
     m_Hint: {fileID: 7815952246135568354}
     m_TargetPositionWeight: 1
     m_TargetRotationWeight: 1
     m_HintWeight: 1
-    m_MaintainTargetPositionOffset: 0
-    m_MaintainTargetRotationOffset: 0
+    m_MaintainTargetPositionOffset: 1
+    m_MaintainTargetRotationOffset: 1
 --- !u!1 &1069485416357788731
 GameObject:
   m_ObjectHideFlags: 0
@@ -1238,14 +1238,14 @@ MonoBehaviour:
   m_Data:
     m_Root: {fileID: 7086148897845247050}
     m_Mid: {fileID: 6978781582181980578}
-    m_Tip: {fileID: 6325373622307618848}
+    m_Tip: {fileID: 3546871088351737914}
     m_Target: {fileID: 7777963887559240948}
     m_Hint: {fileID: 6368358023983528717}
     m_TargetPositionWeight: 1
     m_TargetRotationWeight: 1
     m_HintWeight: 1
-    m_MaintainTargetPositionOffset: 0
-    m_MaintainTargetRotationOffset: 0
+    m_MaintainTargetPositionOffset: 1
+    m_MaintainTargetRotationOffset: 1
 --- !u!1 &3855898917059966632
 GameObject:
   m_ObjectHideFlags: 0
@@ -2534,7 +2534,7 @@ Transform:
   m_GameObject: {fileID: 7035570754492239133}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.25, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2951,7 +2951,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8546341075934338565}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: a5835433b926f8841a462e4d41f241a9, type: 2}
   m_CullingMode: 1
   m_UpdateMode: 0
@@ -2959,10 +2959,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage: "\nBinding warning: Some generic clip(s) animate transforms that
-    are already bound by a Humanoid avatar. These transforms can only be changed
-    by Humanoid clips.\n\tTransform 'LeftForeArm'\n\tTransform 'LeftArm'\n\tFrom
-    animation clip 'idle_pose'"
+  m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
