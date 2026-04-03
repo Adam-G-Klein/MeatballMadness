@@ -22,6 +22,8 @@ GameObject:
   - component: {fileID: 1933546644954696675}
   - component: {fileID: 4362270591978570229}
   - component: {fileID: -7091935692094853703}
+  - component: {fileID: 8104633971256362341}
+  - component: {fileID: -2746169110752537434}
   m_Layer: 7
   m_Name: PlayerMeatball
   m_TagString: Player
@@ -383,7 +385,11 @@ MonoBehaviour:
   reelKey: 19
   reelLoopAudioSource: {fileID: -7091935692094853703}
   reelLoopClip: {fileID: 8300000, guid: 9f4dcd2d6b24e4bf59aff349614fce58, type: 3}
-  reelLoopVolume: 0.097
+  reelLoopVolume: 0.1
+  impactAudioSource: {fileID: 8104633971256362341}
+  impactSplatClip: {fileID: 8300000, guid: 901770f5d50dc4617b791df4a107fed6, type: 3}
+  impactSplatVolume: 0.1
+  impactSfxCooldown: 0.08
   debugLogs: 0
 --- !u!82 &-7091935692094853703
 AudioSource:
@@ -482,3 +488,125 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!82 &8104633971256362341
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141278423515096476}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &-2746169110752537434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141278423515096476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f427302166dd44daa9e13d1a9a9ade26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarinaraTrailPainter
+  minDistanceBetweenStamps: 0.18
+  minTimeBetweenStamps: 0.04
+  minSurfaceSpeedToPaint: 0.35
+  surfaceOffset: 0.05
+  stampDepth: 0.22
+  paintableLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  minStampSize: 3
+  maxStampSize: 6
+  minOpacity: 0.82
+  maxOpacity: 1
+  playerSpecificDecalMaterial: {fileID: 0}

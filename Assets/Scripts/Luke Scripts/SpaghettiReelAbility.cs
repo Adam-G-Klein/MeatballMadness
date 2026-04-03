@@ -9,12 +9,14 @@ using UnityEngine.InputSystem;
 /// - Hold the reel key to pull the other player toward you
 /// - If the other player is below you, a vertical assist helps lift them upward
 /// - While reeling, a looping SFX plays and stops immediately when reeling ends
+/// - Plays a splat SFX whenever this player hits any surface
 ///
 /// This runs server-authoritatively:
 /// - owner reads input locally
 /// - owner sends reeling state to server
 /// - server applies physics forces to both rigidbodies
-/// - server replicates reel state so all clients can play/stop the SFX
+/// - server replicates reel state so all clients can play/stop the reel loop
+/// - server detects collisions and tells all clients to play the splat sound
 /// </summary>
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(MeatballPhysicsController))]
@@ -29,9 +31,8 @@ public class SpaghettiReelAbility : NetworkBehaviour
     [Header("Input")]
     [SerializeField] private Key reelKey = Key.E;
 
-    [Header("Audio")]
-    [Tooltip("AudioSource used for the looping reel sound. "
-           + "If left empty, the script will try to use an AudioSource on this object.")]
+    [Header("Reel Audio")]
+    [Tooltip("AudioSource used for the looping reel sound. If left empty, the script will try to use an AudioSource on this object.")]
     [SerializeField] private AudioSource reelLoopAudioSource;
 
     [Tooltip("Optional clip to assign automatically to the loop AudioSource.")]
@@ -41,6 +42,20 @@ public class SpaghettiReelAbility : NetworkBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float reelLoopVolume = 1f;
 
+    [Header("Impact Audio")]
+    [Tooltip("AudioSource used for splat impact sounds. If left empty, the script will try to use a second AudioSource on this object. If none is found, it falls back to the reel AudioSource.")]
+    [SerializeField] private AudioSource impactAudioSource;
+
+    [Tooltip("Clip played whenever this player hits any surface.")]
+    [SerializeField] private AudioClip impactSplatClip;
+
+    [Tooltip("Volume of the splat one-shot.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float impactSplatVolume = 1f;
+
+    [Tooltip("Small cooldown to prevent one collision from firing the sound many times in rapid succession.")]
+    [SerializeField] private float impactSfxCooldown = 0.08f;
+
     [Header("Debug")]
     [SerializeField] private bool debugLogs;
 
@@ -49,10 +64,9 @@ public class SpaghettiReelAbility : NetworkBehaviour
     private float _nextResendTime;
     private bool _audioWasPlaying;
 
-    // Server-side authoritative held state.
     private bool _serverIsReeling;
+    private float _lastImpactSfxTime = -999f;
 
-    // Replicated reel state so every client can play/stop the loop audio.
     private readonly NetworkVariable<bool> _replicatedIsReeling = new NetworkVariable<bool>(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -72,6 +86,23 @@ public class SpaghettiReelAbility : NetworkBehaviour
             reelLoopAudioSource = GetComponent<AudioSource>();
         }
 
+        if (impactAudioSource == null)
+        {
+            AudioSource[] foundSources = GetComponents<AudioSource>();
+
+            if (foundSources.Length >= 2)
+            {
+                if (foundSources[0] == reelLoopAudioSource)
+                    impactAudioSource = foundSources[1];
+                else
+                    impactAudioSource = foundSources[0];
+            }
+            else
+            {
+                impactAudioSource = reelLoopAudioSource;
+            }
+        }
+
         ConfigureLoopAudioSource();
     }
 
@@ -80,10 +111,10 @@ public class SpaghettiReelAbility : NetworkBehaviour
         _localHeldLastFrame = false;
         _nextResendTime = 0f;
         _serverIsReeling = false;
+        _lastImpactSfxTime = -999f;
 
         _replicatedIsReeling.OnValueChanged += OnReplicatedReelStateChanged;
 
-        // Sync audio immediately for late join / spawn timing cases.
         RefreshLoopAudio(_replicatedIsReeling.Value);
     }
 
@@ -144,6 +175,24 @@ public class SpaghettiReelAbility : NetworkBehaviour
         ApplyReelForces(playerRigidbody, partnerRb);
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!IsServer)
+            return;
+
+        if (!IsSpawned)
+            return;
+
+        if (collision == null || collision.contactCount <= 0)
+            return;
+
+        if (Time.time - _lastImpactSfxTime < impactSfxCooldown)
+            return;
+
+        _lastImpactSfxTime = Time.time;
+        PlayImpactSfxClientRpc();
+    }
+
     [ServerRpc]
     private void SetReelingServerRpc(bool isHeld)
     {
@@ -177,8 +226,6 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
     private SpaghettiReelAbility FindPartner()
     {
-        // Built primarily for 2-player.
-        // If more than 2 players exist, picks the nearest other meatball.
         SpaghettiReelAbility nearest = null;
         float nearestSqrDistance = float.MaxValue;
 
@@ -221,16 +268,13 @@ public class SpaghettiReelAbility : NetworkBehaviour
         if (extraStretch <= 0f)
             return;
 
-        // Base pull plus extra pull the farther apart the pair is.
         float pullForce = reelSettings.reelForce + (extraStretch * reelSettings.reelStretchForce);
 
-        // Damp the partner moving away from the reeling player.
         float separatingSpeed = Vector3.Dot(partnerRb.linearVelocity - selfRb.linearVelocity, -axis);
         float dampingForce = Mathf.Max(0f, separatingSpeed) * reelSettings.reelDamping;
 
         Vector3 totalPull = axis * (pullForce + dampingForce);
 
-        // Add vertical assist when the partner is below the reeling player.
         float verticalGap = selfRb.position.y - partnerRb.position.y;
         if (verticalGap > 0f)
         {
@@ -301,6 +345,18 @@ public class SpaghettiReelAbility : NetworkBehaviour
         }
 
         _audioWasPlaying = false;
+    }
+
+    [ClientRpc]
+    private void PlayImpactSfxClientRpc()
+    {
+        if (impactAudioSource == null)
+            return;
+
+        if (impactSplatClip == null)
+            return;
+
+        impactAudioSource.PlayOneShot(impactSplatClip, impactSplatVolume);
     }
 
 #if UNITY_EDITOR
