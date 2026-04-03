@@ -17,7 +17,7 @@ MonoBehaviour:
   maxRunHorizontalSpeed: 25
   airControlFraction: 0
   jumpImpulse: 40
-  groundCheckRadius: 3
+  groundCheckRadius: 1
   groundMask:
     serializedVersion: 2
     m_Bits: 64
