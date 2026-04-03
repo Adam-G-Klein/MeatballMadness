@@ -6,11 +6,17 @@ public class TrampolineBounce_Debug : MonoBehaviour
     [Header("Bounce")]
     [SerializeField] private float bounceStrength = 30f;
 
+    [Tooltip("Direction the trampoline will launch the player in (world space).")]
+    [SerializeField] private Vector3 bounceDirection = new Vector3(0f, 1f, 0f);
+
+    [Tooltip("If true, clears velocity along the bounce direction before applying force.")]
+    [SerializeField] private bool resetVelocityAlongBounceDirection = true;
+
     [Header("Debug")]
     [SerializeField] private bool enableLogs = true;
     [SerializeField] private bool drawDebug = true;
 
-    private void OnCollisionStay(Collision collision)
+    private void OnCollisionEnter(Collision collision)
     {
         if (enableLogs)
             Debug.Log($"[TRAMPOLINE] Collision with: {collision.gameObject.name}");
@@ -20,43 +26,32 @@ public class TrampolineBounce_Debug : MonoBehaviour
         if (rb == null)
         {
             if (enableLogs)
-                Debug.Log("[TRAMPOLINE] ❌ No Rigidbody found");
+                Debug.Log("[TRAMPOLINE] No Rigidbody found");
             return;
         }
 
-        if (enableLogs)
-            Debug.Log($"[TRAMPOLINE] ✅ Rigidbody found: {rb.name}");
+        Vector3 dir = bounceDirection.normalized;
 
-        // Draw contact points
-        for (int i = 0; i < collision.contactCount; i++)
+        if (drawDebug)
         {
-            ContactPoint contact = collision.GetContact(i);
-
-            if (drawDebug)
+            for (int i = 0; i < collision.contactCount; i++)
             {
-                Debug.DrawRay(contact.point, Vector3.up * 0.5f, Color.green);
-                Debug.DrawRay(contact.point, contact.normal, Color.yellow);
+                ContactPoint contact = collision.GetContact(i);
+                Debug.DrawRay(contact.point, dir * 0.75f, Color.green, 1f);
             }
         }
 
-        // Simple "on top" check using position
-        if (rb.worldCenterOfMass.y < transform.position.y)
+        if (enableLogs)
+            Debug.Log($"[TRAMPOLINE] Bounce triggered. Direction: {dir}");
+
+        if (resetVelocityAlongBounceDirection)
         {
-            if (enableLogs)
-                Debug.Log("[TRAMPOLINE] ❌ Object is below trampoline, ignoring");
-            return;
+            Vector3 velocity = rb.linearVelocity;
+            float velInDir = Vector3.Dot(velocity, dir);
+            rb.linearVelocity = velocity - (dir * velInDir);
         }
 
-        if (enableLogs)
-            Debug.Log("[TRAMPOLINE] ✅ Bounce triggered!");
-
-        // Reset vertical velocity for consistent bounce
-        Vector3 velocity = rb.linearVelocity;
-        velocity = new Vector3(velocity.x, 0f, velocity.z);
-        rb.linearVelocity = velocity;
-
-        // Apply bounce
-        rb.AddForce(transform.up * bounceStrength, ForceMode.VelocityChange);
+        rb.AddForce(dir * bounceStrength, ForceMode.VelocityChange);
     }
 
     private Rigidbody GetRigidbodyFromCollision(Collision collision)
