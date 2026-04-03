@@ -42,6 +42,9 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     [Tooltip("Speed curve: X = lag distance normalized 0–1 (0 = no lag, 1 = MaxLagDistance), Y = speed lerp 0–1 (0 = MinFollowSpeed, 1 = MaxFollowSpeed). Increase curvature to make the camera snap harder when far behind.")]
     [SerializeField] AnimationCurve _followSpeedCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+    [Tooltip("If the target moves farther than this distance from the camera pivot, the pivot snaps instantly. Set to 0 to disable.")]
+    [SerializeField] float _snapDistance = 20f;
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     InputSystem_Actions _actions;
@@ -112,10 +115,18 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
         // Smooth the pivot toward the meatball. Speed is driven by the curve:
         // slow when the meatball is near-centered, faster as lag distance grows.
-        float lagDist  = Vector3.Distance(_smoothedPivot, _target.position);
-        float t        = Mathf.Clamp01(lagDist / _maxLagDistance);
-        float speed    = Mathf.Lerp(_minFollowSpeed, _maxFollowSpeed, _followSpeedCurve.Evaluate(t));
-        _smoothedPivot = Vector3.MoveTowards(_smoothedPivot, _target.position, speed * Time.deltaTime);
+        float lagDist = Vector3.Distance(_smoothedPivot, _target.position);
+
+        if (_snapDistance > 0f && lagDist > _snapDistance)
+        {
+            _smoothedPivot = _target.position;
+        }
+        else
+        {
+            float t    = Mathf.Clamp01(lagDist / _maxLagDistance);
+            float speed = Mathf.Lerp(_minFollowSpeed, _maxFollowSpeed, _followSpeedCurve.Evaluate(t));
+            _smoothedPivot = Vector3.MoveTowards(_smoothedPivot, _target.position, speed * Time.deltaTime);
+        }
 
         // Accumulate orbit angles from Look input.
 #if UNITY_EDITOR

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(MMMovement))]
 public class TimedLiftPlatform : MonoBehaviour
 {
     [Header("Movement")]
@@ -26,7 +26,7 @@ public class TimedLiftPlatform : MonoBehaviour
     [Tooltip("If true, the player will be parented to the platform while on it.")]
     public bool parentPlayerWhileOnPlatform = false;
 
-    private Rigidbody rb;
+    private MMMovement _movement;
 
     private Vector3 startPoint;
     private Vector3 targetPoint;
@@ -41,13 +41,13 @@ public class TimedLiftPlatform : MonoBehaviour
 
     private readonly HashSet<Transform> playersOnPlatform = new HashSet<Transform>();
 
-    private void Awake()
+    private void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true;
-        rb.useGravity = false;
+        _movement = GetComponent<MMMovement>();
+        _movement.IsKinematic = true;
+        _movement.UseGravity = false;
 
-        startPoint = rb.position;
+        startPoint = _movement.Position;
         targetPoint = startPoint + targetOffset;
     }
 
@@ -95,9 +95,9 @@ public class TimedLiftPlatform : MonoBehaviour
         {
             MovePlatform(targetPoint);
 
-            if (Vector3.Distance(rb.position, targetPoint) <= arriveDistance)
+            if (Vector3.Distance(_movement.Position, targetPoint) <= arriveDistance)
             {
-                rb.MovePosition(targetPoint);
+                _movement.MovePosition(targetPoint);
                 movingToTarget = false;
                 atTarget = true;
                 atStart = false;
@@ -108,9 +108,9 @@ public class TimedLiftPlatform : MonoBehaviour
         {
             MovePlatform(startPoint);
 
-            if (Vector3.Distance(rb.position, startPoint) <= arriveDistance)
+            if (Vector3.Distance(_movement.Position, startPoint) <= arriveDistance)
             {
-                rb.MovePosition(startPoint);
+                _movement.MovePosition(startPoint);
                 movingToStart = false;
                 atStart = true;
                 atTarget = false;
@@ -122,12 +122,12 @@ public class TimedLiftPlatform : MonoBehaviour
     private void MovePlatform(Vector3 destination)
     {
         Vector3 nextPosition = Vector3.MoveTowards(
-            rb.position,
+            _movement.Position,
             destination,
             moveSpeed * Time.fixedDeltaTime
         );
 
-        rb.MovePosition(nextPosition);
+        _movement.MovePosition(nextPosition);
     }
 
     private void StartMovingToTarget()
