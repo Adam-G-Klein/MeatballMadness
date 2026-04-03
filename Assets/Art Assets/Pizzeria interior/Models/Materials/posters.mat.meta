@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 770705d1657b5de4b923669ff7b940c4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/posters.mat
+  uploadId: 790056

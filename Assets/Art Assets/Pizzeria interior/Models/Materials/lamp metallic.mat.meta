@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4164f868eef72e847a52cbf234345440
+timeCreated: 1447149404
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/lamp metallic.mat
+  uploadId: 790056

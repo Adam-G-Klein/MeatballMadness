@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b3e3365754fbabb41be948bd2fbbb961
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/beer tap plastic.mat
+  uploadId: 790056

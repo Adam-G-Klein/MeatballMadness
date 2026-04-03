@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 218591f5d92028c4fafbd619fc7544fd
+timeCreated: 1447248240
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/toilets.mat
+  uploadId: 790056

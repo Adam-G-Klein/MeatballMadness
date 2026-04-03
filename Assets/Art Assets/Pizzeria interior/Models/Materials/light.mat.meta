@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 30401aab7b8c2f246a996418c999b07c
+timeCreated: 1447149404
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/light.mat
+  uploadId: 790056

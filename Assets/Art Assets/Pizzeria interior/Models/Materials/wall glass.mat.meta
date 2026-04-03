@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b52c541b0c72b0c4ebc8c92ce2536566
+timeCreated: 1447354045
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/wall glass.mat
+  uploadId: 790056

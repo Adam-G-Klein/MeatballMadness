@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 381e448220e3bae43824737a87c88ecb
+timeCreated: 1447584653
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/paper cup.prefab
+  uploadId: 790056

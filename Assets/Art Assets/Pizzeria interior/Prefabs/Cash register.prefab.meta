@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: c494911e6a927794994c98cbff504da9
+timeCreated: 1447584188
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Cash register.prefab
+  uploadId: 790056

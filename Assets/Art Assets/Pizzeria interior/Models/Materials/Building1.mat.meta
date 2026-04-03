@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 63024c3899ca5fd4b8b7d28653996d6d
+timeCreated: 1447578961
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/Building1.mat
+  uploadId: 790056

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 315eb8c8977f74f41a4fc9333d641787
+timeCreated: 1447585410
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Refrigerator2.prefab
+  uploadId: 790056

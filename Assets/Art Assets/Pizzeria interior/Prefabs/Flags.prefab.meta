@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ca638c130cbbf6940b3cfddfa957578c
+timeCreated: 1448709113
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Flags.prefab
+  uploadId: 790056

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 61ddd6934e16d054ebb2be4abf55723b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Scene/LightingData.asset
+  uploadId: 790056

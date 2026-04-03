@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 425f29143b6cfbd4aba27b02b6ec5034
+timeCreated: 1447575823
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/OpenClose.mat
+  uploadId: 790056

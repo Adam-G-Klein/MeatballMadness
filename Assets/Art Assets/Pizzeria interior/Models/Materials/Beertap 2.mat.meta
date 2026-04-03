@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: db41e70363d58d946b3f08b94492de46
+timeCreated: 1447243684
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/Beertap 2.mat
+  uploadId: 790056

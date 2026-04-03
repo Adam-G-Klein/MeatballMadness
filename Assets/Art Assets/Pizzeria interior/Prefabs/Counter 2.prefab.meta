@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 03e7bef84a6b6f048a637c1514a95dfc
+timeCreated: 1447584379
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Counter 2.prefab
+  uploadId: 790056

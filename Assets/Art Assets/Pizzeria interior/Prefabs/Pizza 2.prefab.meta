@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 34e4ae7a1dc0c234ab61e1f60ddc2e0e
+timeCreated: 1447585328
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Pizza 2.prefab
+  uploadId: 790056

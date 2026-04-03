@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e5b66100b669bf24a9db96eb5d90b1d4
+timeCreated: 1447176938
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/tray.mat
+  uploadId: 790056

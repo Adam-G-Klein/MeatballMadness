@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fa1fd560c1bde7c45b7bfd31f9e72f1c
+timeCreated: 1447590709
+licenseType: Store
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Demo.unity
+  uploadId: 790056

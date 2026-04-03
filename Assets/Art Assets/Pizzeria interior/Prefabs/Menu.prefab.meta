@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 16e929185cb138c4f8114f38f08f7610
+timeCreated: 1447584567
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Menu.prefab
+  uploadId: 790056

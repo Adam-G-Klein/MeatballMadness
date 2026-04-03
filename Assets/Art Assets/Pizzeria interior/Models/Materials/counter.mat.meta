@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 38b23a77f97a3d345aaf8084bb3cfbe2
+timeCreated: 1447158924
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/counter.mat
+  uploadId: 790056

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: db56e0e6aa0ee4a419f53e03826dd0f0
+timeCreated: 1447103863
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/wood 2.mat
+  uploadId: 790056

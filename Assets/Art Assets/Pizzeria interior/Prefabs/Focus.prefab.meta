@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 83e2316bdeadcad4aacee52ceabce87b
+timeCreated: 1447584471
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Focus.prefab
+  uploadId: 790056

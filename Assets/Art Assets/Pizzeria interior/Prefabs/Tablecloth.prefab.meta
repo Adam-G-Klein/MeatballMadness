@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: bdb26dce0194d0d45b12381f7e3a0ff6
+timeCreated: 1447586062
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Prefabs/Tablecloth.prefab
+  uploadId: 790056

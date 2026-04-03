@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4a621a850fd683c48bb115be68b33890
+timeCreated: 1447235560
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/knife metallic.mat
+  uploadId: 790056

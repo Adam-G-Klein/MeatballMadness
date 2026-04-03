@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 708551c6caf124643b23a689c4a4c655
+timeCreated: 1447148287
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/vintage picture.mat
+  uploadId: 790056

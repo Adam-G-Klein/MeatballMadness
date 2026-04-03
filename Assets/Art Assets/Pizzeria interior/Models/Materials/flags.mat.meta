@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: cd586fe89f3703145b6d29dcbf30b49b
+timeCreated: 1448695570
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/flags.mat
+  uploadId: 790056

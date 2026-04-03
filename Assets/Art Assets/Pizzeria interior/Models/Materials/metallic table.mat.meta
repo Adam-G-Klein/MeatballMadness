@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e717b12d16ed81c49a42b6fee634696e
+timeCreated: 1447170850
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Models/Materials/metallic table.mat
+  uploadId: 790056

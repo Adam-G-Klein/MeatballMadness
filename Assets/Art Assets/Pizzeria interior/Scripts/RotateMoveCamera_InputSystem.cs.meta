@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: 06d61a277bf8ccf41baed9bd413dfc01
+AssetOrigin:
+  serializedVersion: 1
+  productId: 50851
+  packageName: Pizzeria Interior
+  packageVersion: 1.3
+  assetPath: Assets/Pizzeria interior/Scripts/RotateMoveCamera_InputSystem.cs
+  uploadId: 790056
