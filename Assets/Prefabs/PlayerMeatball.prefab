@@ -20,7 +20,7 @@ GameObject:
   - component: {fileID: 1845387534074825289}
   - component: {fileID: 5773202127583854617}
   - component: {fileID: 1933546644954696675}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: PlayerMeatball
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -363,6 +363,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeatballChefController
   _chefPrefab: {fileID: 3422403236833232616, guid: 2054e6952f59b7a48b28ae205476083e, type: 3}
-  _heightOffset: 1.2
-  _positionFollowSpeed: 12
-  _snapDistance: 5

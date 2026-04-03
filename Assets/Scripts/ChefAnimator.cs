@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.Animation.Rigging;
 using UnityEngine;
 
 /// <summary>
@@ -19,8 +18,8 @@ public class ChefAnimator : MonoBehaviour
     [SerializeField] List<GameObject> _chefSkinPrefabs;
     [SerializeField] float _chefScale = 2f;
 
-    [Tooltip("Height above the follow target's center.")]
-    [SerializeField] float _heightOffset = 1.2f;
+    [Tooltip("Additional height above the ball surface (added on top of meatball radius).")]
+    [SerializeField] float _heightOffset = 0.2f;
 
     [Header("Movement Response")]
     [Tooltip("How quickly the chef rotates to face the movement direction.")]
@@ -37,19 +36,32 @@ public class ChefAnimator : MonoBehaviour
     [Tooltip("How quickly the lean angle tracks the current acceleration.")]
     [SerializeField] float _leanSmoothSpeed = 6f;
 
-    [Header("IK Bones & Targets")]
-    [Tooltip("IK goal transform for the left foot (TwoBoneIKConstraint data.target).")]
-    [SerializeField] Transform _leftFootTarget;
-    [Tooltip("IK goal transform for the right foot (TwoBoneIKConstraint data.target).")]
-    [SerializeField] Transform _rightFootTarget;
-    [Tooltip("Pole / hint transform for the left knee (TwoBoneIKConstraint data.hint).")]
-    [SerializeField] Transform _leftKneePole;
-    [Tooltip("Pole / hint transform for the right knee (TwoBoneIKConstraint data.hint).")]
-    [SerializeField] Transform _rightKneePole;
-    [Tooltip("Left upper-leg bone (TwoBoneIKConstraint data.root).")]
-    [SerializeField] Transform _leftHip;
-    [Tooltip("Right upper-leg bone (TwoBoneIKConstraint data.root).")]
-    [SerializeField] Transform _rightHip;
+    [Header("Spine / Lean Bone")]
+    [Tooltip("Name of the spine bone that receives the directional lean rotation.")]
+    [SerializeField] string _spine1BoneName = "Spine1";
+
+    [Header("IK Bone Names")]
+    [Tooltip("Name of the IK goal transform for the left foot in the chef skin hierarchy.")]
+    [SerializeField] string _leftFootTargetName  = "LeftFootTarget";
+    [Tooltip("Name of the IK goal transform for the right foot in the chef skin hierarchy.")]
+    [SerializeField] string _rightFootTargetName = "RightFootTarget";
+    [Tooltip("Name of the pole / hint transform for the left knee.")]
+    [SerializeField] string _leftKneePollName    = "LeftLegPole";
+    [Tooltip("Name of the pole / hint transform for the right knee.")]
+    [SerializeField] string _rightKneePollName   = "RightLegPole";
+    [Tooltip("Name of the left upper-leg bone.")]
+    [SerializeField] string _leftHipName         = "LeftUpperLeg";
+    [Tooltip("Name of the right upper-leg bone.")]
+    [SerializeField] string _rightHipName        = "RightUpperLeg";
+
+    // Resolved at runtime by searching the instantiated skin hierarchy by name.
+    Transform _spine1Bone;
+    Transform _leftFootTarget;
+    Transform _rightFootTarget;
+    Transform _leftKneePole;
+    Transform _rightKneePole;
+    Transform _leftHip;
+    Transform _rightHip;
 
     [Header("IK / Stepping")]
     [Tooltip("Radius of the meatball sphere used to project foot targets onto its surface.")]
@@ -81,6 +93,11 @@ public class ChefAnimator : MonoBehaviour
 
     [Tooltip("Outward lateral offset applied to each knee pole hint.")]
     [SerializeField] float _kneePoleLatDist = 0.15f;
+
+    [Header("Foot Raycast")]
+    [Tooltip("Layer mask for the meatball collider used when raycasting foot target positions.")]
+    [SerializeField] LayerMask _meatballLayerMask = ~0;
+
 
     // Tracks which prefabs are claimed by live ChefAnimator instances.
     static readonly HashSet<GameObject> _claimedPrefabs = new();
@@ -115,6 +132,11 @@ public class ChefAnimator : MonoBehaviour
         public Vector3 stepFromWorld;    // foot world pos when step started
         public Vector3 stepToWorld;      // target world pos (fixed at step start)
         public Vector3 pendingLocalDir;  // new footLocalDir committed on step completion
+
+        // Gizmo data for the most recent foot-placement raycast
+        public Vector3 rayOrigin;
+        public Vector3 rayEnd;
+        public bool    rayHit;
     }
 
     LegState[] _legs;           // [0] = left, [1] = right
@@ -151,6 +173,8 @@ public class ChefAnimator : MonoBehaviour
         GameObject skin = Instantiate(_claimedPrefab, transform);
         skin.transform.localScale = Vector3.one * _chefScale;
 
+        ResolveBoneTransforms(skin.transform);
+
         foreach (Component comp in GetComponentsInChildren<Component>())
         {
             if (comp.GetType().Name == "BoneRenderer")
@@ -174,6 +198,32 @@ public class ChefAnimator : MonoBehaviour
 
         if (_boneChild != null)
             InitLegs();
+    }
+
+    // -------------------------------------------------------------------------
+    // Bone transform resolution
+    // -------------------------------------------------------------------------
+
+    void ResolveBoneTransforms(Transform skinRoot)
+    {
+        _spine1Bone      = FindInChildren(skinRoot, _spine1BoneName);
+        _leftFootTarget  = FindInChildren(skinRoot, _leftFootTargetName);
+        _rightFootTarget = FindInChildren(skinRoot, _rightFootTargetName);
+        _leftKneePole    = FindInChildren(skinRoot, _leftKneePollName);
+        _rightKneePole   = FindInChildren(skinRoot, _rightKneePollName);
+        _leftHip         = FindInChildren(skinRoot, _leftHipName);
+        _rightHip        = FindInChildren(skinRoot, _rightHipName);
+    }
+
+    static Transform FindInChildren(Transform root, string name)
+    {
+        if (string.IsNullOrEmpty(name)) return null;
+        foreach (Transform t in root.GetComponentsInChildren<Transform>(includeInactive: true))
+        {
+            if (t.name == name) return t;
+        }
+        Debug.LogWarning($"[ChefAnimator] Could not find '{name}' in chef skin hierarchy.");
+        return null;
     }
 
     // -------------------------------------------------------------------------
@@ -229,13 +279,12 @@ public class ChefAnimator : MonoBehaviour
     {
         if (_followTarget == null || _boneChild == null) return;
 
-        // Phase 1: position skeleton root above meatball.
-        _boneChild.position = _followTarget.position + Vector3.up * _heightOffset;
+        // Phase 1: position skeleton root on top of meatball.
+        _boneChild.position = _followTarget.position + Vector3.up * (_meatballRadius + _heightOffset);
 
         // Phase 2: rotate chef to face velocity; apply lean.
         UpdateFacingAndLean();
 
-        if (_legs == null) return;
 
         // Phase 3: advance any in-progress step animation.
         UpdateStepAnimations();
@@ -296,7 +345,11 @@ public class ChefAnimator : MonoBehaviour
         _prevVelocityReady = true;
 
         _currentLeanEuler = Vector3.Lerp(_currentLeanEuler, targetLeanEuler, _leanSmoothSpeed * Time.deltaTime);
-        _boneChild.rotation = _currentFacing * Quaternion.Euler(_currentLeanEuler);
+
+        // Keep the armature root upright; apply facing + lean only to Spine1.
+        //_boneChild.rotation = Quaternion.identity;
+        if (_spine1Bone != null)
+            _spine1Bone.rotation = _currentFacing * Quaternion.Euler(_currentLeanEuler);
     }
 
     // -------------------------------------------------------------------------
@@ -387,8 +440,28 @@ public class ChefAnimator : MonoBehaviour
         Vector3 rawOffset = forwardDir * forwardAmount + lateralOffset;
         Vector3 targetDir = rawOffset.magnitude > 0.001f ? rawOffset.normalized : forwardDir;
 
-        leg.stepToWorld     = meatballCenter + targetDir * _meatballRadius;
-        leg.pendingLocalDir = _followTarget.InverseTransformDirection(targetDir).normalized;
+        // Fire a ray from the hip down into the meatball to find the surface contact point.
+        Vector3 rayOrigin = leg.hipBone.position;
+        Vector3 rayDir    = (meatballCenter - rayOrigin).normalized;
+        float   rayDist   = Vector3.Distance(rayOrigin, meatballCenter) + _meatballRadius;
+
+        leg.rayOrigin = rayOrigin;
+
+        if (Physics.Raycast(rayOrigin, rayDir, out RaycastHit hit, rayDist, _meatballLayerMask))
+        {
+            leg.stepToWorld     = hit.point;
+            leg.pendingLocalDir = _followTarget.InverseTransformDirection(hit.point - meatballCenter).normalized;
+            leg.rayEnd          = hit.point;
+            leg.rayHit          = true;
+        }
+        else
+        {
+            // Fallback: project onto sphere surface mathematically.
+            leg.stepToWorld     = meatballCenter + targetDir * _meatballRadius;
+            leg.pendingLocalDir = _followTarget.InverseTransformDirection(targetDir).normalized;
+            leg.rayEnd          = rayOrigin + rayDir * rayDist;   // draw full ray length on miss
+            leg.rayHit          = false;
+        }
     }
 
     void ApplyIKTargets()
@@ -435,6 +508,13 @@ public class ChefAnimator : MonoBehaviour
                 if (leg.hipBone != null)
                     Gizmos.DrawLine(leg.hipBone.position, leg.ikHint.position);
             }
+
+            // Draw the most recent foot-placement raycast.
+            Gizmos.color = leg.rayHit ? Color.green : Color.red;
+            Gizmos.DrawLine(leg.rayOrigin, leg.rayEnd);
+            Gizmos.DrawSphere(leg.rayOrigin, 0.04f);
+            if (leg.rayHit)
+                Gizmos.DrawSphere(leg.rayEnd, 0.04f);
         }
     }
 
