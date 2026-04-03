@@ -24,6 +24,9 @@ public class MarinaraTrailPainter : MonoBehaviour
     [Header("Player Visual Variation")]
     [SerializeField] private Material playerSpecificDecalMaterial;
 
+    [Header("Parenting")]
+    [SerializeField] private bool parentDecalsToHitObject = true;
+
     private Rigidbody rb;
     private Vector3 lastStampPosition;
     private float lastStampTime = -999f;
@@ -61,10 +64,11 @@ public class MarinaraTrailPainter : MonoBehaviour
             }
         }
 
-        TryPlaceStamp(bestContact.point, bestContact.normal);
+        Transform hitParent = collision.collider != null ? collision.collider.transform : null;
+        TryPlaceStamp(bestContact.point, bestContact.normal, hitParent);
     }
 
-    private void TryPlaceStamp(Vector3 point, Vector3 normal)
+    private void TryPlaceStamp(Vector3 point, Vector3 normal, Transform hitParent)
     {
         if (Time.time - lastStampTime < minTimeBetweenStamps)
             return;
@@ -93,6 +97,15 @@ public class MarinaraTrailPainter : MonoBehaviour
             randomAngle,
             playerSpecificDecalMaterial
         );
+
+        if (parentDecalsToHitObject && hitParent != null)
+        {
+            decal.transform.SetParent(hitParent, true);
+        }
+        else
+        {
+            decal.transform.SetParent(null, true);
+        }
 
         lastStampPosition = stampPosition;
         lastStampTime = Time.time;

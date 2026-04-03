@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 ///
 /// Intended for 2-player play:
 /// - Hold the reel key to pull the other player toward you
+/// - Only grounded players are allowed to reel
 /// - If the other player is below you, a vertical assist helps lift them upward
 /// - While reeling, a looping SFX plays and stops immediately when reeling ends
 /// - Plays a splat SFX whenever this player hits any surface
@@ -14,6 +15,7 @@ using UnityEngine.InputSystem;
 /// This runs server-authoritatively:
 /// - owner reads input locally
 /// - owner sends reeling state to server
+/// - server decides whether reeling is allowed
 /// - server applies physics forces to both rigidbodies
 /// - server replicates reel state so all clients can play/stop the reel loop
 /// - server detects collisions and tells all clients to play the splat sound
@@ -30,6 +32,16 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
     [Header("Input")]
     [SerializeField] private Key reelKey = Key.E;
+
+    [Header("Grounded Reel Restriction")]
+    [Tooltip("Layers treated as ground for deciding whether this player is allowed to reel.")]
+    [SerializeField] private LayerMask reelGroundMask = ~0;
+
+    [Tooltip("Radius of the ground-check sphere used for reel eligibility.")]
+    [SerializeField] private float reelGroundCheckRadius = 0.6f;
+
+    [Tooltip("Vertical offset downward from transform.position for the reel ground check.")]
+    [SerializeField] private float reelGroundCheckDownOffset = 0.5f;
 
     [Header("Reel Audio")]
     [Tooltip("AudioSource used for the looping reel sound. If left empty, the script will try to use an AudioSource on this object.")]
@@ -64,8 +76,11 @@ public class SpaghettiReelAbility : NetworkBehaviour
     private float _nextResendTime;
     private bool _audioWasPlaying;
 
+    private bool _serverRequestedReeling;
     private bool _serverIsReeling;
     private float _lastImpactSfxTime = -999f;
+
+    private static readonly Collider[] _groundHits = new Collider[8];
 
     private readonly NetworkVariable<bool> _replicatedIsReeling = new NetworkVariable<bool>(
         false,
@@ -110,6 +125,7 @@ public class SpaghettiReelAbility : NetworkBehaviour
     {
         _localHeldLastFrame = false;
         _nextResendTime = 0f;
+        _serverRequestedReeling = false;
         _serverIsReeling = false;
         _lastImpactSfxTime = -999f;
 
@@ -124,8 +140,8 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
         if (IsServer)
         {
-            _serverIsReeling = false;
-            _replicatedIsReeling.Value = false;
+            _serverRequestedReeling = false;
+            SetServerReelingState(false);
         }
 
         StopLoopAudioImmediate();
@@ -147,7 +163,7 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
         if (shouldSend)
         {
-            SetReelingServerRpc(held);
+            SetReelingIntentServerRpc(held);
             _localHeldLastFrame = held;
             _nextResendTime = Time.unscaledTime + GetResendInterval();
         }
@@ -157,6 +173,8 @@ public class SpaghettiReelAbility : NetworkBehaviour
     {
         if (!IsServer)
             return;
+
+        UpdateServerReelStateFromGrounding();
 
         if (!_serverIsReeling)
             return;
@@ -194,15 +212,50 @@ public class SpaghettiReelAbility : NetworkBehaviour
     }
 
     [ServerRpc]
-    private void SetReelingServerRpc(bool isHeld)
+    private void SetReelingIntentServerRpc(bool isHeld)
     {
-        _serverIsReeling = isHeld;
-        _replicatedIsReeling.Value = isHeld;
+        _serverRequestedReeling = isHeld;
+        UpdateServerReelStateFromGrounding();
 
         if (debugLogs)
         {
-            Debug.Log($"[SpaghettiReelAbility] Client {OwnerClientId} reeling: {_serverIsReeling}");
+            Debug.Log($"[SpaghettiReelAbility] Client {OwnerClientId} requested reeling: {_serverRequestedReeling}, active: {_serverIsReeling}");
         }
+    }
+
+    private void UpdateServerReelStateFromGrounding()
+    {
+        bool grounded = IsGroundedForReeling();
+        bool shouldBeReeling = _serverRequestedReeling && grounded;
+        SetServerReelingState(shouldBeReeling);
+    }
+
+    private void SetServerReelingState(bool shouldBeReeling)
+    {
+        if (_serverIsReeling == shouldBeReeling)
+            return;
+
+        _serverIsReeling = shouldBeReeling;
+        _replicatedIsReeling.Value = shouldBeReeling;
+
+        if (debugLogs)
+        {
+            Debug.Log($"[SpaghettiReelAbility] Client {OwnerClientId} reel active changed to: {_serverIsReeling}");
+        }
+    }
+
+    private bool IsGroundedForReeling()
+    {
+        Vector3 origin = transform.position + Vector3.down * reelGroundCheckDownOffset;
+
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            reelGroundCheckRadius,
+            _groundHits,
+            reelGroundMask,
+            QueryTriggerInteraction.Ignore);
+
+        return hitCount > 0;
     }
 
     private float GetResendInterval()
@@ -362,6 +415,10 @@ public class SpaghettiReelAbility : NetworkBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmosSelected()
     {
+        Vector3 reelGroundCheckPos = transform.position + Vector3.down * reelGroundCheckDownOffset;
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(reelGroundCheckPos, reelGroundCheckRadius);
+
         if (!Application.isPlaying)
             return;
 

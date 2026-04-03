@@ -15,8 +15,8 @@ MonoBehaviour:
   moveForce: 80
   maxWalkHorizontalSpeed: 6
   maxRunHorizontalSpeed: 25
-  airControlFraction: 0.5
-  jumpImpulse: 40
+  airControlFraction: 1
+  jumpImpulse: 30
   groundCheckRadius: 1
   groundMask:
     serializedVersion: 2

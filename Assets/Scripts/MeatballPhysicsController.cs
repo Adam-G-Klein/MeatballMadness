@@ -57,7 +57,7 @@ public class MeatballPhysicsController : NetworkBehaviour
     /// <summary>Pushes drag values from the settings asset onto the Rigidbody.</summary>
     private void ApplyRigidbodySettings()
     {
-        _rb.linearDamping  = _settings.linearDrag;
+        _rb.linearDamping = _settings.linearDrag;
         _rb.angularDamping = _settings.angularDrag;
     }
 
@@ -70,10 +70,10 @@ public class MeatballPhysicsController : NetworkBehaviour
         var mat = new PhysicsMaterial("MeatballPhysics")
         {
             dynamicFriction = _settings.dynamicFriction,
-            staticFriction  = _settings.staticFriction,
-            bounciness      = _settings.bounciness,
+            staticFriction = _settings.staticFriction,
+            bounciness = _settings.bounciness,
             frictionCombine = PhysicsMaterialCombine.Multiply,
-            bounceCombine   = PhysicsMaterialCombine.Maximum,
+            bounceCombine = PhysicsMaterialCombine.Maximum,
         };
         GetComponent<Collider>().material = mat;
     }
@@ -107,7 +107,7 @@ public class MeatballPhysicsController : NetworkBehaviour
         if (delaySeconds <= 0f)
         {
             // No delay — update pending state immediately.
-            _pendingMove   = move;
+            _pendingMove = move;
             _pendingSprint = sprint;
             if (jump) _pendingJump = true;
             return;
@@ -116,9 +116,9 @@ public class MeatballPhysicsController : NetworkBehaviour
         _inputQueue.Enqueue(new InputPacket
         {
             DueTime = Time.fixedTime + delaySeconds,
-            Move    = move,
-            Jump    = jump,
-            Sprint  = sprint,
+            Move = move,
+            Jump = jump,
+            Sprint = sprint,
         });
     }
 
@@ -142,9 +142,9 @@ public class MeatballPhysicsController : NetworkBehaviour
             MeatballPhysicsController other = ServerInstances[i];
             if (other == this) continue;
 
-            Vector3 delta    = other._rb.position - _rb.position;
-            float   distance = delta.magnitude;
-            float   stretch  = distance - _settings.noodleLength;
+            Vector3 delta = other._rb.position - _rb.position;
+            float distance = delta.magnitude;
+            float stretch = distance - _settings.noodleLength;
             if (stretch <= 0f) continue;
 
             Vector3 axis = delta / distance;
@@ -155,7 +155,7 @@ public class MeatballPhysicsController : NetworkBehaviour
             // Damping: damps the rate at which stretch is changing.
             // Positive stretchRate = meatballs moving apart → adds to pull force.
             // Negative stretchRate = meatballs closing → reduces pull force, damping overshoot.
-            float stretchRate  = Vector3.Dot(other._rb.linearVelocity - _rb.linearVelocity, axis);
+            float stretchRate = Vector3.Dot(other._rb.linearVelocity - _rb.linearVelocity, axis);
             float dampingForce = _settings.tetherDamping * stretchRate;
 
             _rb.AddForce(axis * (springForce + dampingForce), ForceMode.Force);
@@ -171,7 +171,7 @@ public class MeatballPhysicsController : NetworkBehaviour
         while (_inputQueue.Count > 0 && _inputQueue.Peek().DueTime <= Time.fixedTime)
         {
             InputPacket p = _inputQueue.Dequeue();
-            _pendingMove   = p.Move;
+            _pendingMove = p.Move;
             _pendingSprint = p.Sprint;
             if (p.Jump) _pendingJump = true;
         }
@@ -183,9 +183,13 @@ public class MeatballPhysicsController : NetworkBehaviour
 
         bool grounded = IsGrounded();
 
-        // Choose the correct speed cap based on sprint state.
-        float speedCap = _pendingSprint ? _settings.maxRunHorizontalSpeed
-                                        : _settings.maxWalkHorizontalSpeed;
+        // Sprint is only allowed while grounded.
+        bool allowSprint = grounded && _pendingSprint;
+
+        // Airborne movement is capped to walk speed.
+        float speedCap = allowSprint
+            ? _settings.maxRunHorizontalSpeed
+            : _settings.maxWalkHorizontalSpeed;
 
         Vector3 horizontalVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
         if (horizontalVel.magnitude >= speedCap) return;
@@ -220,12 +224,16 @@ public class MeatballPhysicsController : NetworkBehaviour
         // Combined mask: normal ground layers plus the Ramp layer so ramp objects
         // are captured in the same query without requiring the designer to add them
         // to groundMask manually.
-        int rampLayer    = LayerMask.NameToLayer("Ramp");
+        int rampLayer = LayerMask.NameToLayer("Ramp");
         int combinedMask = _settings.groundMask | (1 << rampLayer);
 
-        int hitCount = Physics.OverlapSphereNonAlloc(origin, _settings.groundCheckRadius,
-                                                     _groundHits, combinedMask,
-                                                     QueryTriggerInteraction.Ignore);
+        int hitCount = Physics.OverlapSphereNonAlloc(
+            origin,
+            _settings.groundCheckRadius,
+            _groundHits,
+            combinedMask,
+            QueryTriggerInteraction.Ignore
+        );
 
         _jumpHeightRampAugment = 0f;
         for (int i = 0; i < hitCount; i++)

@@ -383,6 +383,11 @@ MonoBehaviour:
   reelSettings: {fileID: 11400000, guid: e4ba835b4e3c44653806823efdf5368f, type: 2}
   playerRigidbody: {fileID: 0}
   reelKey: 19
+  reelGroundMask:
+    serializedVersion: 2
+    m_Bits: 64
+  reelGroundCheckRadius: 0.6
+  reelGroundCheckDownOffset: 0.5
   reelLoopAudioSource: {fileID: -7091935692094853703}
   reelLoopClip: {fileID: 8300000, guid: 9f4dcd2d6b24e4bf59aff349614fce58, type: 3}
   reelLoopVolume: 0.1
@@ -610,3 +615,4 @@ MonoBehaviour:
   minOpacity: 0.82
   maxOpacity: 1
   playerSpecificDecalMaterial: {fileID: 0}
+  parentDecalsToHitObject: 1
