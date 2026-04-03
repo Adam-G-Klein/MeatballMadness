@@ -52,7 +52,6 @@ public class ChefAnimator : MonoBehaviour
 
     GameObject _claimedPrefab;
     Transform _followTarget;
-    Transform _boneChild;
     MeatballNetSync _netSync;
 
     // State for facing / lean computation.
@@ -95,16 +94,6 @@ public class ChefAnimator : MonoBehaviour
 
         _spine1Bone = skin.transform;
 
-        foreach (Component comp in GetComponentsInChildren<Component>())
-        {
-            if (comp.GetType().Name == "BoneRenderer")
-            {
-                _boneChild = comp.transform;
-                break;
-            }
-        }
-        if (_boneChild == null)
-            Debug.LogWarning("[ChefAnimator] No child with BoneRenderer found.", this);
     }
 
     /// <summary>Called by MeatballChefController after spawning this prefab.</summary>
@@ -130,10 +119,10 @@ public class ChefAnimator : MonoBehaviour
 
     void LateUpdate()
     {
-        if (_followTarget == null || _boneChild == null) return;
+        if (_followTarget == null) return;
 
         // Phase 1: position skeleton root on top of meatball.
-        _boneChild.position = _followTarget.position + Vector3.up * (_meatballRadius + _heightOffset);
+        _spine1Bone.position = _followTarget.position + Vector3.up * (_meatballRadius + _heightOffset);
 
         // Phase 2: rotate chef to face velocity; apply lean.
         UpdateFacingAndLean();
@@ -153,41 +142,11 @@ public class ChefAnimator : MonoBehaviour
             _animator.SetFloat("Speed", normalizedSpeed);
         }
 
-        // Rotate to face movement direction when moving fast enough.
-        if (horizontalVel.sqrMagnitude > _minSpeedForFacing * _minSpeedForFacing)
-        {
-            Quaternion targetFacing = Quaternion.LookRotation(horizontalVel.normalized, Vector3.up);
-            _currentFacing = Quaternion.Slerp(_currentFacing, targetFacing, _facingSpeed * Time.deltaTime);
-        }
-
-        // Derive acceleration by differentiating velocity each frame.
-        Vector3 targetLeanEuler = Vector3.zero;
-        if (_prevVelocityReady)
-        {
-            Vector3 accel = (vel - _prevVelocity) / Time.deltaTime;
-            Vector3 horizontalAccel = new(accel.x, 0f, accel.z);
-
-            if (horizontalAccel.sqrMagnitude > 0.1f)
-            {
-                // Express acceleration in the chef's facing space so lean is
-                // always relative to which way the chef is looking.
-                Vector3 localAccel = Quaternion.Inverse(_currentFacing) * horizontalAccel;
-
-                // Negative X = lean forward, negative Z = lean right (Unity euler conventions).
-                float forwardLean = Mathf.Clamp(-localAccel.z * _leanFactor, -_maxLeanAngle, _maxLeanAngle);
-                float sideLean    = Mathf.Clamp(-localAccel.x * _leanFactor, -_maxLeanAngle, _maxLeanAngle);
-                targetLeanEuler = new Vector3(forwardLean, 0f, sideLean);
-            }
-        }
-
-        _prevVelocity = vel;
-        _prevVelocityReady = true;
-
-        _currentLeanEuler = Vector3.Lerp(_currentLeanEuler, targetLeanEuler, _leanSmoothSpeed * Time.deltaTime);
+        Quaternion targetFacing = Quaternion.LookRotation(horizontalVel.normalized, Vector3.up);
 
         // Keep the armature root upright; apply facing + lean only to Spine1.
         if (_spine1Bone != null)
-            _spine1Bone.rotation = _currentFacing; //* Quaternion.Euler(_currentLeanEuler);
+            _spine1Bone.rotation = targetFacing; //* Quaternion.Euler(_currentLeanEuler);
     }
 
     void OnDestroy()
