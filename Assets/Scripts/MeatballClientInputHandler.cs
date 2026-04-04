@@ -101,5 +101,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     public void OnToggleLooking(InputAction.CallbackContext context) {}
 
+    public void OnMenu(InputAction.CallbackContext context) {}
+
     #endregion
 }

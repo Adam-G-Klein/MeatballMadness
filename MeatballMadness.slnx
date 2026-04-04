@@ -23,11 +23,13 @@
   <Project Path="Unity.VisualScripting.Core.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="Unity.PerformanceTesting.Editor.csproj" />
+  <Project Path="glTFast.Editor.csproj" />
   <Project Path="UnityEngine.TestRunner.csproj" />
   <Project Path="Unity.Burst.csproj" />
   <Project Path="Unity.Services.Core.Environments.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkProfiler.Editor.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
+  <Project Path="glTFast.csproj" />
   <Project Path="Unity.Animation.Rigging.csproj" />
   <Project Path="Unity.Netcode.Runtime.csproj" />
   <Project Path="Unity.Networking.Transport.csproj" />
@@ -43,6 +45,7 @@
   <Project Path="Unity.Multiplayer.Tools.Adapters.csproj" />
   <Project Path="Blocks.Sessions.Common.csproj" />
   <Project Path="Unity.Services.Wire.Internal.csproj" />
+  <Project Path="glTFast.Documentation.Examples.csproj" />
   <Project Path="UnityEditor.TestRunner.csproj" />
   <Project Path="Unity.VisualScripting.Core.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Runtime.csproj" />
@@ -64,6 +67,7 @@
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Implementation.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
+  <Project Path="glTFast.Export.csproj" />
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Component.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
@@ -75,6 +79,7 @@
   <Project Path="Unity.Performance.Profile-Analyzer.Editor.csproj" />
   <Project Path="UnityEditor.UI.csproj" />
   <Project Path="Unity.Netcode.Editor.csproj" />
+  <Project Path="glTFast.Newtonsoft.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.2D.Editor.Overrides.csproj" />
   <Project Path="Unity.Networking.Editor.csproj" />
   <Project Path="Unity.Services.Authentication.PlayerAccounts.Editor.csproj" />
@@ -101,6 +106,7 @@
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetVis.Configuration.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="UnityEditor.UI.Analytics.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSolutionInterface.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
@@ -112,7 +118,6 @@
   <Project Path="Unity.Multiplayer.Tools.NetStats.CodeGen.csproj" />
   <Project Path="Unity.Multiplayer.Tools.DependencyInjection.csproj" />
   <Project Path="Unity.ShaderGraph.Utilities.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.VisualScripting.Shared.Editor.csproj" />
   <Project Path="com.unity.multiplayer.tools.window.csproj" />
   <Project Path="Unity.Profiling.Core.csproj" />
@@ -125,6 +130,7 @@
   <Project Path="Unity.Services.Authentication.Editor.Shared.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.Animation.Rigging.DocCodeExamples.csproj" />
+  <Project Path="glTFast.dots.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetVis.Editor.Visualization.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />

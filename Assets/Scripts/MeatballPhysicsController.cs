@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -18,6 +19,11 @@ public class MeatballPhysicsController : NetworkBehaviour
     /// Populated in OnNetworkSpawn (IsServer only); tether force logic reads this list.
     /// </summary>
     public static readonly List<MeatballPhysicsController> ServerInstances = new();
+
+    /// <summary>Fired on the server when a meatball's NetworkObject spawns.</summary>
+    public static event Action<MeatballPhysicsController> OnMeatballSpawned;
+    /// <summary>Fired on the server when a meatball's NetworkObject despawns.</summary>
+    public static event Action<MeatballPhysicsController> OnMeatballDespawned;
 
     [SerializeField] private MeatballMovementSettings _settings;
 
@@ -83,6 +89,7 @@ public class MeatballPhysicsController : NetworkBehaviour
         if (IsServer)
         {
             ServerInstances.Add(this);
+            OnMeatballSpawned?.Invoke(this);
             Debug.Log($"[Tether] Meatball registered. Server count: {ServerInstances.Count}");
         }
     }
@@ -90,6 +97,7 @@ public class MeatballPhysicsController : NetworkBehaviour
     public override void OnNetworkDespawn()
     {
         ServerInstances.Remove(this);
+        OnMeatballDespawned?.Invoke(this);
     }
 
     /// <summary>

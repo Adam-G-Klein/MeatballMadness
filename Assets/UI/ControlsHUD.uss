@@ -1,0 +1,53 @@
+.win-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    -unity-text-align: middle-center;
+    font-size: 72px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    white-space: normal;
+    -unity-paragraph-spacing: 16px;
+    background-color: rgba(0, 0, 0, 0.65);
+}
+
+.controls-root {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    width: 160px;
+}
+
+.controls-panel {
+    background-color: rgba(0, 0, 0, 0.45);
+    border-radius: 5px;
+    padding: 6px 8px;
+}
+
+.controls-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.controls-key {
+    width: 46px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.2);
+    padding: 1px 3px;
+    font-size: 8px;
+    -unity-font-style: bold;
+    color: rgb(255, 255, 255);
+    -unity-text-align: middle-center;
+    margin-right: 6px;
+}
+
+.controls-action {
+    font-size: 8px;
+    color: rgb(200, 200, 200);
+    flex-grow: 1;
+}

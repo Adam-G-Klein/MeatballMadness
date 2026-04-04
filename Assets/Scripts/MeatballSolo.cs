@@ -178,6 +178,8 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     public void OnToggleLooking(InputAction.CallbackContext context) { }
 
+    public void OnMenu(InputAction.CallbackContext context) { }
+
     public void OnSprint(InputAction.CallbackContext context)
     {
         _rawSprintHeld = context.ReadValue<float>() == 1f;

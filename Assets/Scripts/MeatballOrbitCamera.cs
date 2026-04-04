@@ -178,4 +178,6 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     {
         _lookingToggled = Mathf.Approximately(context.ReadValue<float>(), 1);
     }
+
+    public void OnMenu(InputAction.CallbackContext context) { }
 }

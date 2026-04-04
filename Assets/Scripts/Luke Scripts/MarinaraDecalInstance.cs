@@ -5,8 +5,8 @@ using UnityEngine.Rendering.Universal;
 public class MarinaraDecalInstance : MonoBehaviour
 {
     [Header("Optional Lifetime")]
-    [SerializeField] private bool useLifetime = false;
-    [SerializeField] private float lifetime = 60f;
+    [SerializeField] private bool useLifetime = true;
+    [SerializeField] private float lifetime = 180f;
 
     private MarinaraTrailPool pool;
     private DecalProjector projector;

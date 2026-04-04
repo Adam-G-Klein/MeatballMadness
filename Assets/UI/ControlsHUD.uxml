@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/ControlsHUD.uss" />
+    <ui:Label name="win-label" class="win-label" text="YOU WIN!&#10;Thanks for playtesting :)" style="display: none;" />
+    <ui:VisualElement name="controls-root" class="controls-root">
+        <ui:VisualElement name="controls-panel" class="controls-panel">
+            <ui:VisualElement class="controls-row">
+                <ui:Label text="WASD" class="controls-key" />
+                <ui:Label text="Move" class="controls-action" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="controls-row">
+                <ui:Label text="Space" class="controls-key" />
+                <ui:Label text="Jump" class="controls-action" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="controls-row">
+                <ui:Label text="L-Shift" class="controls-key" />
+                <ui:Label text="Sprint" class="controls-action" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="controls-row">
+                <ui:Label text="R" class="controls-key" />
+                <ui:Label text="Respawn" class="controls-action" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="controls-row">
+                <ui:Label text="E" class="controls-key" />
+                <ui:Label text="Slurp" class="controls-action" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
