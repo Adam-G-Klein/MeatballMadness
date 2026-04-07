@@ -9,6 +9,7 @@
   <Project Path="Unity.Services.Core.Internal.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Configuration.csproj" />
   <Project Path="Unity.ShaderGraph.Editor.csproj" />
+  <Project Path="Unity.InputSystem.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.csproj" />
   <Project Path="Unity.Services.Vivox.csproj" />
   <Project Path="Unity.Mathematics.csproj" />
@@ -34,7 +35,6 @@
   <Project Path="Unity.Netcode.Runtime.csproj" />
   <Project Path="Unity.Networking.Transport.csproj" />
   <Project Path="Unity.Services.Authentication.csproj" />
-  <Project Path="Unity.InputSystem.csproj" />
   <Project Path="Unity.Animation.Rigging.Editor.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="PPv2URPConverters.csproj" />
@@ -43,9 +43,9 @@
   <Project Path="Unity.Searcher.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricTypes.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.csproj" />
-  <Project Path="Blocks.Sessions.Common.csproj" />
-  <Project Path="Unity.Services.Wire.Internal.csproj" />
   <Project Path="glTFast.Documentation.Examples.csproj" />
+  <Project Path="Unity.Services.Wire.Internal.csproj" />
+  <Project Path="Blocks.Sessions.Common.csproj" />
   <Project Path="UnityEditor.TestRunner.csproj" />
   <Project Path="Unity.VisualScripting.Core.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Runtime.csproj" />
@@ -78,8 +78,8 @@
   <Project Path="Unity.Multiplayer.Tools.NetVis.Editor.UI.csproj" />
   <Project Path="Unity.Performance.Profile-Analyzer.Editor.csproj" />
   <Project Path="UnityEditor.UI.csproj" />
-  <Project Path="Unity.Netcode.Editor.csproj" />
   <Project Path="glTFast.Newtonsoft.csproj" />
+  <Project Path="Unity.Netcode.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.2D.Editor.Overrides.csproj" />
   <Project Path="Unity.Networking.Editor.csproj" />
   <Project Path="Unity.Services.Authentication.PlayerAccounts.Editor.csproj" />

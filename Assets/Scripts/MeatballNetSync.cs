@@ -1,3 +1,4 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -25,6 +26,23 @@ public class MeatballNetSync : NetworkBehaviour
 
     private Rigidbody _rb;
 
+    // -------------------------------------------------------------------------
+    // Skin index assignment
+    // -------------------------------------------------------------------------
+
+    // Incremented by the host each time a meatball spawns, giving each one a unique slot.
+    static int _nextSkinIndex;
+
+    /// <summary>
+    /// Fires on all machines (including the host) once the host has assigned a skin index
+    /// to this meatball. If you subscribe after the RPC has already arrived, check
+    /// <see cref="SkinIndex"/> first — it will be non-negative.
+    /// </summary>
+    public event Action<int> OnSkinIndexAssigned;
+
+    /// <summary>The assigned skin-list index for this meatball, or -1 if not yet received.</summary>
+    public int SkinIndex { get; private set; } = -1;
+
     // NetworkVariables: host writes every FixedUpdate, all clients read.
     private readonly NetworkVariable<Vector3> _netPosition = new NetworkVariable<Vector3>(
         Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -46,12 +64,24 @@ public class MeatballNetSync : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsServer)
+        if (IsServer)
+        {
+            // Assign a unique skin index to this meatball and broadcast it to all clients.
+            AssignSkinIndexClientRpc(_nextSkinIndex++);
+        }
+        else
         {
             // Clients must not run their own physics simulation — kinematic means
             // the engine ignores forces and we drive the body entirely via MovePosition/MoveRotation.
             _rb.isKinematic = true;
         }
+    }
+
+    [ClientRpc]
+    void AssignSkinIndexClientRpc(int index)
+    {
+        SkinIndex = index;
+        OnSkinIndexAssigned?.Invoke(index);
     }
 
     private void FixedUpdate()

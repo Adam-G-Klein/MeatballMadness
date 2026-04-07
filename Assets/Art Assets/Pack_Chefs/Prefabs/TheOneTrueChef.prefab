@@ -1320,7 +1320,7 @@ GameObject:
   - component: {fileID: 1722885576761305746}
   - component: {fileID: 923559010985480634}
   m_Layer: 0
-  m_Name: shirt red
+  m_Name: Shirt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1626,7 +1626,7 @@ GameObject:
   - component: {fileID: 4799709749687702067}
   - component: {fileID: 4690855578131742963}
   m_Layer: 0
-  m_Name: chef hat red
+  m_Name: Hat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2153,7 +2153,7 @@ GameObject:
   - component: {fileID: 2302062724569331416}
   - component: {fileID: 5802811187849616531}
   m_Layer: 0
-  m_Name: glove white
+  m_Name: Gloves
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2918,7 +2918,7 @@ GameObject:
   - component: {fileID: 8870178696736983191}
   - component: {fileID: 1498895493765201959}
   m_Layer: 0
-  m_Name: Chef 1
+  m_Name: TheOneTrueChef
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

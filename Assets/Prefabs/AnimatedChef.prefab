@@ -44,8 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 374886e54ef37c642aeee62d1e394a9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChefAnimator
-  _chefSkinPrefabs:
-  - {fileID: 8546341075934338565, guid: f31ea20864c759248ab6a526b5a0e4e0, type: 3}
+  _chefSkinPrefab: {fileID: 8546341075934338565, guid: f31ea20864c759248ab6a526b5a0e4e0, type: 3}
   _chefScale: 2
   _heightOffset: 0.5
   _meatballRadius: 1
@@ -56,3 +55,21 @@ MonoBehaviour:
   _maxLeanAngle: 20
   _leanSmoothSpeed: 6
   _spine1BoneName: Chef1
+  _hatObjectName: Hat
+  _glovesObjectName: Gloves
+  _shirtObjectName: Shirt
+  _hatMeshes:
+  - {fileID: -6542219547618408357, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: -4441420065765723149, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: 6999135226393847464, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: -7068431861112375894, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  _glovesMeshes:
+  - {fileID: 3368290722276028241, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: -2324437548904022062, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: 5568163531900468746, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: -2324437548904022062, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  _shirtMeshes:
+  - {fileID: -1523169996688537377, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: -1947023496324922006, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: 1373704915756928770, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
+  - {fileID: 8216756036861687640, guid: 2c0c84898cfb8144298f3be6ea927f8a, type: 3}
