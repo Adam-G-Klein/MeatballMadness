@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.unify.unified-universal-blur": "https://github.com/lukakldiashvili/Unified-Universal-Blur.git",
     "com.unity.animation.rigging": "1.4.1",
     "com.unity.cloud.gltfast": "6.18.0",
     "com.unity.collab-proxy": "2.11.4",
