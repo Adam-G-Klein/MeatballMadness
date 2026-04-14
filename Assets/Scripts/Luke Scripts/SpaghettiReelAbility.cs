@@ -184,16 +184,23 @@ public class SpaghettiReelAbility : NetworkBehaviour
         if (_controller == null || playerRigidbody == null || reelSettings == null)
             return;
 
-        SpaghettiReelAbility partner = FindPartner();
-        if (partner == null)
-            return;
+        for (int i = 0; i < MeatballPhysicsController.ServerInstances.Count; i++)
+        {
+            MeatballPhysicsController otherController = MeatballPhysicsController.ServerInstances[i];
 
-        Rigidbody partnerRb = partner.GetPartnerRigidbody();
-        if (partnerRb == null)
-            return;
+            if (otherController == null)
+                continue;
 
-        TetherForce partnerTether = partner.GetComponent<TetherForce>();
-        ApplyReelForces(playerRigidbody, partnerRb, partnerTether);
+            if (otherController == _controller)
+                continue;
+
+            Rigidbody partnerRb = otherController.Rigidbody;
+            if (partnerRb == null)
+                continue;
+
+            TetherForce partnerTether = otherController.GetComponent<TetherForce>();
+            ApplyReelForces(playerRigidbody, partnerRb, partnerTether);
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -267,46 +274,6 @@ public class SpaghettiReelAbility : NetworkBehaviour
             return 0.15f;
 
         return Mathf.Max(0.05f, reelSettings.resendInterval);
-    }
-
-    private Rigidbody GetPartnerRigidbody()
-    {
-        if (playerRigidbody != null)
-            return playerRigidbody;
-
-        if (_controller != null)
-            return _controller.Rigidbody;
-
-        return null;
-    }
-
-    private SpaghettiReelAbility FindPartner()
-    {
-        SpaghettiReelAbility nearest = null;
-        float nearestSqrDistance = float.MaxValue;
-
-        for (int i = 0; i < MeatballPhysicsController.ServerInstances.Count; i++)
-        {
-            MeatballPhysicsController otherController = MeatballPhysicsController.ServerInstances[i];
-
-            if (otherController == null)
-                continue;
-
-            if (otherController == _controller)
-                continue;
-
-            if (!otherController.TryGetComponent(out SpaghettiReelAbility otherAbility))
-                continue;
-
-            float sqrDistance = (otherController.transform.position - transform.position).sqrMagnitude;
-            if (sqrDistance < nearestSqrDistance)
-            {
-                nearestSqrDistance = sqrDistance;
-                nearest = otherAbility;
-            }
-        }
-
-        return nearest;
     }
 
     private void ApplyReelForces(Rigidbody selfRb, Rigidbody partnerRb, TetherForce partnerTether)
@@ -443,12 +410,14 @@ public class SpaghettiReelAbility : NetworkBehaviour
         if (!IsServer)
             return;
 
-        SpaghettiReelAbility partner = FindPartner();
-        if (partner == null)
-            return;
-
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, partner.transform.position);
+        for (int i = 0; i < MeatballPhysicsController.ServerInstances.Count; i++)
+        {
+            MeatballPhysicsController otherController = MeatballPhysicsController.ServerInstances[i];
+            if (otherController == null || otherController == _controller)
+                continue;
+            Gizmos.DrawLine(transform.position, otherController.transform.position);
+        }
     }
 #endif
 }

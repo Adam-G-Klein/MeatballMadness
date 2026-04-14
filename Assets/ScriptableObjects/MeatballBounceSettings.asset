@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd997c836cdc7be4899ddbf009b45acb, type: 3}
   m_Name: MeatballBounceSettings
   m_EditorClassIdentifier: Assembly-CSharp::MeatballBounceSettings
-  baseBounceImpulse: 5
-  velocityScale: 1
-  maxBounceImpulse: 40
+  baseBounceImpulse: 10
+  velocityScale: 10
+  maxBounceImpulse: 100

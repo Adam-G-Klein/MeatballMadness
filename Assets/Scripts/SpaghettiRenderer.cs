@@ -67,6 +67,10 @@ public class SpaghettiRenderer : MonoBehaviour
 
     private readonly Dictionary<SpaghettiRenderer, Chain> _chains = new();
 
+    // One LineRenderer per owned partner. The first owned chain uses `_lineRenderer`
+    // (the component on this GameObject); additional chains use child LRs cloned from it.
+    private readonly Dictionary<SpaghettiRenderer, LineRenderer> _partnerLines = new();
+
     // Reusable buffers to avoid per-frame GC.
     private readonly List<Vector3> _anchorBuf     = new(8);
     private          int[]         _interiorBuf   = new int[0];
@@ -93,6 +97,9 @@ public class SpaghettiRenderer : MonoBehaviour
         Instances.Remove(this);
         _chains.Clear();
         if (_lineRenderer != null) _lineRenderer.positionCount = 0;
+        foreach (var kv in _partnerLines)
+            if (kv.Value != null && kv.Value != _lineRenderer) Destroy(kv.Value.gameObject);
+        _partnerLines.Clear();
     }
 
     // ── Simulation ──────────────────────────────────────────────────────────
@@ -103,24 +110,73 @@ public class SpaghettiRenderer : MonoBehaviour
         // Guarantees exactly one chain per pair with no coordination between renderers.
         int myIndex = Instances.IndexOf(this);
 
-        bool drewChain = false;
+        // Mark which partner LRs are still in use this frame; release the rest at the end.
+        foreach (var kv in _partnerLines)
+            if (kv.Value != null) kv.Value.enabled = false;
+
         for (int i = myIndex + 1; i < Instances.Count; i++)
         {
             SpaghettiRenderer target = Instances[i];
             StepChain(target);
 
-            // The first chain this instance owns drives the LineRenderer. For 2-player this
-            // is always the one and only chain.
-            if (!drewChain && _lineRenderer != null && _chains.TryGetValue(target, out Chain chain))
+            if (!_chains.TryGetValue(target, out Chain chain)) continue;
+
+            LineRenderer lr = GetOrCreateLineFor(target);
+            if (lr != null)
             {
-                UpdateLineRenderer(in chain);
-                drewChain = true;
+                lr.enabled = true;
+                UpdateLineRenderer(lr, in chain);
             }
         }
 
-        // If this instance owns no chains (higher-indexed in every pair), keep its LineRenderer
-        // empty so it contributes nothing to rendering.
-        if (!drewChain && _lineRenderer != null) _lineRenderer.positionCount = 0;
+        // Any partner LR not touched this frame (partner despawned) gets cleared.
+        foreach (var kv in _partnerLines)
+            if (kv.Value != null && !kv.Value.enabled) kv.Value.positionCount = 0;
+
+        // If this instance owns no chains, keep its primary LineRenderer empty.
+        if (_lineRenderer != null && !_partnerLines.ContainsValue(_lineRenderer))
+            _lineRenderer.positionCount = 0;
+    }
+
+    /// <summary>
+    /// Returns a LineRenderer dedicated to the chain between this renderer and <paramref name="target"/>.
+    /// The first owned partner reuses the primary LineRenderer on this GameObject; subsequent partners
+    /// get a child GameObject with a LineRenderer cloned from the primary so materials/widths match.
+    /// </summary>
+    private LineRenderer GetOrCreateLineFor(SpaghettiRenderer target)
+    {
+        if (_partnerLines.TryGetValue(target, out LineRenderer existing) && existing != null)
+            return existing;
+
+        LineRenderer lr;
+        if (!_partnerLines.ContainsValue(_lineRenderer) && _lineRenderer != null)
+        {
+            lr = _lineRenderer;
+        }
+        else
+        {
+            var go = new GameObject("SpaghettiLine");
+            go.transform.SetParent(transform, worldPositionStays: false);
+            lr = go.AddComponent<LineRenderer>();
+            if (_lineRenderer != null)
+            {
+                lr.sharedMaterial    = _lineRenderer.sharedMaterial;
+                lr.startWidth        = _lineRenderer.startWidth;
+                lr.endWidth          = _lineRenderer.endWidth;
+                lr.widthCurve        = _lineRenderer.widthCurve;
+                lr.colorGradient     = _lineRenderer.colorGradient;
+                lr.numCapVertices    = _lineRenderer.numCapVertices;
+                lr.numCornerVertices = _lineRenderer.numCornerVertices;
+                lr.useWorldSpace     = _lineRenderer.useWorldSpace;
+                lr.textureMode       = _lineRenderer.textureMode;
+                lr.alignment         = _lineRenderer.alignment;
+                lr.shadowCastingMode = _lineRenderer.shadowCastingMode;
+                lr.receiveShadows    = _lineRenderer.receiveShadows;
+            }
+        }
+
+        _partnerLines[target] = lr;
+        return lr;
     }
 
     /// <summary>
@@ -339,7 +395,7 @@ public class SpaghettiRenderer : MonoBehaviour
     /// does not overshoot — the rope takes a visible bend at each pivot without the kink a
     /// raw polyline would show and without the overshoot a naive Catmull-Rom spline would produce.
     /// </summary>
-    private void UpdateLineRenderer(in Chain chain)
+    private void UpdateLineRenderer(LineRenderer lr, in Chain chain)
     {
         int total = chain.current.Length;
 
@@ -365,9 +421,9 @@ public class SpaghettiRenderer : MonoBehaviour
         }
         _smoothedPoints.Add(chain.current[total - 1]); // final endpoint
 
-        _lineRenderer.positionCount = _smoothedPoints.Count;
+        lr.positionCount = _smoothedPoints.Count;
         for (int i = 0; i < _smoothedPoints.Count; i++)
-            _lineRenderer.SetPosition(i, _smoothedPoints[i]);
+            lr.SetPosition(i, _smoothedPoints[i]);
     }
 
     /// <summary>Evaluates a Catmull-Rom spline at <paramref name="t"/> ∈ [0,1] between
