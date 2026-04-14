@@ -427,6 +427,25 @@ public class TetherForce : NetworkBehaviour
         outPath.Add(other._rb != null ? other._rb.position : other.transform.position);
     }
 
+    // ── Public API for SpaghettiReelAbility ─────────────────────────────────
+
+    /// <summary>
+    /// Returns the first waypoint in this meatball's path toward <paramref name="other"/>:
+    /// the nearest wrap pivot if the tether has caught on geometry, otherwise the partner's
+    /// position. Use this to direct reel forces toward the tether's contact point rather than
+    /// straight at the partner through geometry.
+    /// </summary>
+    public Vector3 GetFirstPathTarget(TetherForce other)
+    {
+        if (_pivotsByOther.TryGetValue(other, out var pivots) && pivots.Count > 0)
+        {
+            Pivot p = pivots[0];
+            return p.IsAlive ? p.ContactTransform.TransformPoint(p.LocalPoint) : p.CachedWorld;
+        }
+
+        return other._rb != null ? other._rb.position : other.transform.position;
+    }
+
     // ── Gizmos ──────────────────────────────────────────────────────────────
 
     private void OnDrawGizmos()

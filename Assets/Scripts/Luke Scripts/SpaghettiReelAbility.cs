@@ -72,6 +72,7 @@ public class SpaghettiReelAbility : NetworkBehaviour
     [SerializeField] private bool debugLogs;
 
     private MeatballPhysicsController _controller;
+    private TetherForce _tether;
     private bool _localHeldLastFrame;
     private float _nextResendTime;
     private bool _audioWasPlaying;
@@ -90,6 +91,7 @@ public class SpaghettiReelAbility : NetworkBehaviour
     private void Awake()
     {
         _controller = GetComponent<MeatballPhysicsController>();
+        _tether = GetComponent<TetherForce>();
 
         if (playerRigidbody == null && _controller != null)
         {
@@ -190,7 +192,8 @@ public class SpaghettiReelAbility : NetworkBehaviour
         if (partnerRb == null)
             return;
 
-        ApplyReelForces(playerRigidbody, partnerRb);
+        TetherForce partnerTether = partner.GetComponent<TetherForce>();
+        ApplyReelForces(playerRigidbody, partnerRb, partnerTether);
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -306,16 +309,26 @@ public class SpaghettiReelAbility : NetworkBehaviour
         return nearest;
     }
 
-    private void ApplyReelForces(Rigidbody selfRb, Rigidbody partnerRb)
+    private void ApplyReelForces(Rigidbody selfRb, Rigidbody partnerRb, TetherForce partnerTether)
     {
-        Vector3 fromPartnerToSelf = selfRb.position - partnerRb.position;
-        float distance = fromPartnerToSelf.magnitude;
+        // Pull the partner toward the nearest tether pivot (e.g. a ledge contact point) rather
+        // than straight toward this meatball. This matches TetherForce's own force direction:
+        // the partner is pulled along the first segment of its wrapped path. Falls back to
+        // pulling directly toward this meatball when the rope hasn't wrapped around anything.
+        Vector3 pullTarget;
+        if (partnerTether != null && _tether != null)
+            pullTarget = partnerTether.GetFirstPathTarget(_tether);
+        else
+            pullTarget = selfRb.position;
+
+        Vector3 fromPartnerToTarget = pullTarget - partnerRb.position;
+        float distance = fromPartnerToTarget.magnitude;
 
         if (distance <= 0.0001f)
             return;
 
         float clampedDistance = Mathf.Min(distance, reelSettings.maxConsideredDistance);
-        Vector3 axis = fromPartnerToSelf / distance;
+        Vector3 axis = fromPartnerToTarget / distance;
 
         float extraStretch = Mathf.Max(0f, clampedDistance - reelSettings.targetDistance);
         if (extraStretch <= 0f)
@@ -323,7 +336,9 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
         float pullForce = reelSettings.reelForce + (extraStretch * reelSettings.reelStretchForce);
 
-        float separatingSpeed = Vector3.Dot(partnerRb.linearVelocity - selfRb.linearVelocity, -axis);
+        // Damp partner velocity moving away from the pull target. The pivot is on static
+        // geometry so we measure the partner's absolute velocity rather than relative.
+        float separatingSpeed = Vector3.Dot(partnerRb.linearVelocity, -axis);
         float dampingForce = Mathf.Max(0f, separatingSpeed) * reelSettings.reelDamping;
 
         Vector3 totalPull = axis * (pullForce + dampingForce);
