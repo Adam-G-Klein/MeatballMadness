@@ -27,8 +27,12 @@ using UnityEngine;
 /// networking model in CLAUDE.md.
 ///
 /// LIMITATIONS:
-/// - Pivots are stored in world space, so they do NOT track moving obstacles. Fine for static
-///   level geometry (the common case); for a moving platform the pivot would be left behind.
+/// - Pivots are bound to the Transform of the collider they caught on (local-space point +
+///   local-space normal), so moving / rotating obstacles carry their pivots correctly. If the
+///   obstacle is destroyed the pivot self-removes on the next tick and wrap re-acquires.
+///   Note: the world position is resolved from the Transform once per FixedUpdate; Rigidbody
+///   obstacles that interpolate in Update will still read the last FixedUpdate pose, which is
+///   correct for physics and fine for visuals.
 /// - The unwind/wrap pair is a heuristic, not a true geodesic. It handles common shapes
 ///   (ledges, posts, convex corners) well and degrades to flicker rather than explosion in
 ///   pathological concave pockets. A hard cap on pivot count prevents runaway growth.
@@ -82,10 +86,37 @@ public class TetherForce : NetworkBehaviour
 
     // ── Per-other-meatball state ────────────────────────────────────────────
 
+    /// <summary>
+    /// A single wrap pivot. Bound to the Transform of the collider that was hit so the pivot
+    /// follows moving / rotating obstacles. Point and normal are stored in that Transform's
+    /// local space; <see cref="ResolveWorld"/> reconstructs the world-space pivot position.
+    ///
+    /// The surface offset (_noodleRadius + _pivotNormalOffset at capture time) is baked into
+    /// the stored local point by applying it along the local-space normal at capture — that
+    /// way a rotated obstacle continues to hold the rope at a consistent distance from the
+    /// surface without re-reading the offset settings each frame.
+    /// </summary>
+    private struct Pivot
+    {
+        public Transform ContactTransform; // collider's transform at capture; null if destroyed
+        public Vector3   LocalPoint;       // surface contact point in local space, already offset along localNormal by (noodleRadius + pivotNormalOffset)
+        public Vector3   LocalNormal;      // contact normal in local space (for gizmos / debug only)
+        public Vector3   CachedWorld;      // last resolved world position (used if ContactTransform is destroyed before removal)
+
+        public bool IsAlive => ContactTransform != null;
+
+        public Vector3 ResolveWorld()
+        {
+            if (ContactTransform == null) return CachedWorld;
+            CachedWorld = ContactTransform.TransformPoint(LocalPoint);
+            return CachedWorld;
+        }
+    }
+
     // Pivots between this meatball and each other meatball, keyed by the other's TetherForce.
     // Contains ONLY intermediate pivots; the meatball endpoints are implicit and appended at
     // force-application / CopyPathTo time.
-    private readonly Dictionary<TetherForce, List<Vector3>> _pivotsByOther = new();
+    private readonly Dictionary<TetherForce, List<Pivot>> _pivotsByOther = new();
 
     // Previous tick's total wrapped-path length per partner, used for rate-of-change damping.
     private readonly Dictionary<TetherForce, float> _prevPathLenByOther = new();
@@ -139,7 +170,7 @@ public class TetherForce : NetworkBehaviour
 
             if (!_pivotsByOther.TryGetValue(other, out var pivots))
             {
-                pivots = new List<Vector3>(4);
+                pivots = new List<Pivot>(4);
                 _pivotsByOther[other] = pivots;
             }
 
@@ -148,24 +179,50 @@ public class TetherForce : NetworkBehaviour
     }
 
     /// <summary>
+    /// Refreshes the world-space positions for every pivot in <paramref name="pivots"/> and
+    /// drops any whose contact Transform has been destroyed. Call this at the start of a tick
+    /// before running any segment cast — otherwise casts would use stale positions from
+    /// obstacles that have already moved this physics step.
+    /// </summary>
+    private void ResolvePivotsAndPrune(List<Pivot> pivots)
+    {
+        for (int i = pivots.Count - 1; i >= 0; i--)
+        {
+            Pivot p = pivots[i];
+            if (!p.IsAlive) { pivots.RemoveAt(i); continue; }
+            p.ResolveWorld();
+            pivots[i] = p;
+        }
+    }
+
+    /// <summary>Returns the world position of <paramref name="index"/>-th pivot (already resolved this tick).</summary>
+    private static Vector3 GetWorld(List<Pivot> pivots, int index) => pivots[index].CachedWorld;
+
+    /// <summary>
     /// One pass of unwind + wrap on the supplied pivot list for a single pair.
     /// See the class-level doc-comment for the high-level algorithm description.
     /// </summary>
-    private void UpdatePivotList(List<Vector3> pivots, Vector3 selfPos, Vector3 otherPos)
+    private void UpdatePivotList(List<Pivot> pivots, Vector3 selfPos, Vector3 otherPos)
     {
+        // Refresh cached world positions from live Transforms AND drop pivots whose obstacle
+        // was destroyed. Every step below reads CachedWorld, so this must come first.
+        ResolvePivotsAndPrune(pivots);
+
         // ── UNWIND ──
         // Iterate until no more removals happen in a single pass; removing one pivot can expose
         // its neighbors as also unwindable (e.g. three collinear pivots on a slope that
         // straightens all at once). The loop is bounded because each iteration strictly shrinks
         // pivots.Count.
+
+        // Adam: check each pair of pivots and remove any where the sphere cast to the next one doesn't hit
         bool removedAny;
         do
         {
             removedAny = false;
             for (int i = 0; i < pivots.Count; i++)
             {
-                Vector3 prev = (i == 0)                ? selfPos  : pivots[i - 1];
-                Vector3 next = (i == pivots.Count - 1) ? otherPos : pivots[i + 1];
+                Vector3 prev = (i == 0)                ? selfPos  : GetWorld(pivots, i - 1);
+                Vector3 next = (i == pivots.Count - 1) ? otherPos : GetWorld(pivots, i + 1);
 
                 Vector3 toNext = next - prev;
                 float   segLen = toNext.magnitude;
@@ -202,8 +259,8 @@ public class TetherForce : NetworkBehaviour
                added < _maxWrapsPerStep &&
                pivots.Count < _maxPivotsPerPair)
         {
-            Vector3 from = (segIndex == 0)            ? selfPos  : pivots[segIndex - 1];
-            Vector3 to   = (segIndex == pivots.Count) ? otherPos : pivots[segIndex];
+            Vector3 from = (segIndex == 0)            ? selfPos  : GetWorld(pivots, segIndex - 1);
+            Vector3 to   = (segIndex == pivots.Count) ? otherPos : GetWorld(pivots, segIndex);
 
             Vector3 seg = to - from;
             float   d   = seg.magnitude;
@@ -216,16 +273,28 @@ public class TetherForce : NetworkBehaviour
                 // offset (_noodleRadius + _pivotNormalOffset) has to be enough that the very
                 // next SphereCast from a neighbor back toward this point does not re-hit the
                 // same surface at zero depth — otherwise we'd duplicate the pivot.
-                Vector3 pivot = hit.point + hit.normal * (_noodleRadius + _pivotNormalOffset);
+                Vector3 worldPivot = hit.point + hit.normal * (_noodleRadius + _pivotNormalOffset);
 
                 // Guard against inserting a pivot coincident with either anchor — would create
                 // a zero-length segment that confuses the next pass.
-                if ((pivot - from).sqrMagnitude < 1e-6f ||
-                    (pivot - to  ).sqrMagnitude < 1e-6f)
+                if ((worldPivot - from).sqrMagnitude < 1e-6f ||
+                    (worldPivot - to  ).sqrMagnitude < 1e-6f)
                 {
                     segIndex++;
                     continue;
                 }
+
+                // Bind the pivot to the hit collider's Transform by capturing the world position
+                // in that Transform's local space. If the collider later translates or rotates,
+                // ResolveWorld reconstructs the correct world position each tick.
+                Transform contact = hit.collider != null ? hit.collider.transform : null;
+                Pivot pivot = new Pivot
+                {
+                    ContactTransform = contact,
+                    LocalPoint       = contact != null ? contact.InverseTransformPoint(worldPivot)   : worldPivot,
+                    LocalNormal      = contact != null ? contact.InverseTransformDirection(hit.normal) : hit.normal,
+                    CachedWorld      = worldPivot,
+                };
 
                 pivots.Insert(segIndex, pivot);
                 added++;
@@ -284,10 +353,11 @@ public class TetherForce : NetworkBehaviour
 
             if (!_pivotsByOther.TryGetValue(other, out var pivots)) continue;
 
-            // Build the full anchor path: [self, ...pivots, other].
+            // Build the full anchor path: [self, ...pivots, other]. Pivots were already
+            // world-resolved by UpdatePivotList earlier this tick, so CachedWorld is fresh.
             _pathBuf.Clear();
             _pathBuf.Add(_rb.position);
-            for (int k = 0; k < pivots.Count; k++) _pathBuf.Add(pivots[k]);
+            for (int k = 0; k < pivots.Count; k++) _pathBuf.Add(pivots[k].CachedWorld);
             _pathBuf.Add(other._rb.position);
 
             // Wrapped-path length is what drives stretch — NOT the straight-line meatball distance.
@@ -344,7 +414,16 @@ public class TetherForce : NetworkBehaviour
         outPath.Clear();
         outPath.Add(_rb != null ? _rb.position : transform.position);
         if (_pivotsByOther.TryGetValue(other, out var pivots))
-            for (int k = 0; k < pivots.Count; k++) outPath.Add(pivots[k]);
+        {
+            // Renderer runs in LateUpdate — resolve pivot world positions fresh here so the
+            // rope follows the obstacle's interpolated visual pose within a frame, rather
+            // than using the FixedUpdate-stale CachedWorld.
+            for (int k = 0; k < pivots.Count; k++)
+            {
+                Pivot p = pivots[k];
+                outPath.Add(p.IsAlive ? p.ContactTransform.TransformPoint(p.LocalPoint) : p.CachedWorld);
+            }
+        }
         outPath.Add(other._rb != null ? other._rb.position : other.transform.position);
     }
 
@@ -369,8 +448,9 @@ public class TetherForce : NetworkBehaviour
             float   totalLen = 0f;
             for (int k = 0; k < pivots.Count; k++)
             {
-                totalLen += Vector3.Distance(prev, pivots[k]);
-                prev = pivots[k];
+                Vector3 w = pivots[k].CachedWorld;
+                totalLen += Vector3.Distance(prev, w);
+                prev = w;
             }
             totalLen += Vector3.Distance(prev, other.transform.position);
 
@@ -379,9 +459,10 @@ public class TetherForce : NetworkBehaviour
             prev = transform.position;
             for (int k = 0; k < pivots.Count; k++)
             {
-                Gizmos.DrawLine(prev, pivots[k]);
-                Gizmos.DrawWireSphere(pivots[k], _noodleRadius * 2f);
-                prev = pivots[k];
+                Vector3 w = pivots[k].CachedWorld;
+                Gizmos.DrawLine(prev, w);
+                Gizmos.DrawWireSphere(w, _noodleRadius * 2f);
+                prev = w;
             }
             Gizmos.DrawLine(prev, other.transform.position);
         }
