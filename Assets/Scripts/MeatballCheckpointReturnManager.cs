@@ -4,29 +4,26 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Scene manager that recalls all spawned MeatballPhysicsController players
-/// to designated checkpoint transforms.
+/// Scene manager that tracks the currently active checkpoint and recalls all spawned
+/// MeatballPhysicsController players to that checkpoint's spawn transforms.
 ///
 /// Setup:
 /// 1. Create an empty scene object and add:
 ///    - NetworkObject
 ///    - MeatballCheckpointReturnManager
-/// 2. Create empty GameObjects in the scene for each player return spot
-/// 3. Assign those transforms into checkpointSpots in the inspector
-///
-/// This does not modify MeatballPhysicsController.
-/// It simply finds active spawned controllers and repositions them on the server.
+/// 2. Create checkpoint objects in the scene with MeatballCheckpointTrigger
+/// 3. Each checkpoint holds its own player spawn points
+/// 4. When a checkpoint is touched, it becomes the active checkpoint
+/// 5. Press the recall key to move all players to the latest active checkpoint
 /// </summary>
 [DisallowMultipleComponent]
 public class MeatballCheckpointReturnManager : NetworkBehaviour
 {
-    [Header("Input")]
-    [Tooltip("Keyboard key that requests all players be returned to their checkpoint spots.")]
-    [SerializeField] private Key recallKey = Key.R;
+    public static MeatballCheckpointReturnManager Instance { get; private set; }
 
-    [Header("Checkpoint Spots")]
-    [Tooltip("Players are assigned to these spots in sorted OwnerClientId order.")]
-    [SerializeField] private Transform[] checkpointSpots;
+    [Header("Input")]
+    [Tooltip("Keyboard key that requests all players be returned to the current checkpoint.")]
+    [SerializeField] private Key recallKey = Key.R;
 
     [Header("Teleport Options")]
     [Tooltip("Also apply the checkpoint transform rotation.")]
@@ -38,8 +35,34 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
     [Tooltip("Temporarily make the rigidbody kinematic while repositioning.")]
     [SerializeField] private bool setKinematicDuringMove = true;
 
-    [Tooltip("If there are more players than spots, reuse the last spot.")]
+    [Tooltip("If there are more players than checkpoint spots, reuse the last spot.")]
     [SerializeField] private bool reuseLastSpotIfNeeded = false;
+
+    [Header("Debug")]
+    [Tooltip("Optional starting checkpoint active from scene load.")]
+    [SerializeField] private MeatballCheckpointTrigger startingCheckpoint;
+
+    private MeatballCheckpointTrigger activeCheckpoint;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[MeatballCheckpointReturnManager] Duplicate manager found. Destroying duplicate.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        if (IsServer && startingCheckpoint != null)
+        {
+            activeCheckpoint = startingCheckpoint;
+        }
+    }
 
     private void Update()
     {
@@ -61,6 +84,22 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
         RecallAllPlayers();
     }
 
+    /// <summary>
+    /// Called by a checkpoint trigger when a player activates it.
+    /// Server only.
+    /// </summary>
+    public void SetActiveCheckpoint(MeatballCheckpointTrigger checkpoint)
+    {
+        if (!IsServer)
+            return;
+
+        if (checkpoint == null)
+            return;
+
+        activeCheckpoint = checkpoint;
+        Debug.Log($"[MeatballCheckpointReturnManager] Active checkpoint set to: {checkpoint.name}");
+    }
+
     [ContextMenu("Recall All Players")]
     public void RecallAllPlayers()
     {
@@ -70,9 +109,9 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
             return;
         }
 
-        if (checkpointSpots == null || checkpointSpots.Length == 0)
+        if (activeCheckpoint == null)
         {
-            Debug.LogWarning("[MeatballCheckpointReturnManager] No checkpoint spots assigned.");
+            Debug.LogWarning("[MeatballCheckpointReturnManager] No active checkpoint has been set.");
             return;
         }
 
@@ -86,7 +125,7 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 
         for (int i = 0; i < players.Count; i++)
         {
-            Transform targetSpot = GetSpotForIndex(i);
+            Transform targetSpot = activeCheckpoint.GetSpotForIndex(i, reuseLastSpotIfNeeded);
 
             if (targetSpot == null)
                 continue;
@@ -118,18 +157,6 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 
         validPlayers.Sort((a, b) => a.OwnerClientId.CompareTo(b.OwnerClientId));
         return validPlayers;
-    }
-
-    private Transform GetSpotForIndex(int index)
-    {
-        if (index < checkpointSpots.Length)
-            return checkpointSpots[index];
-
-        if (reuseLastSpotIfNeeded && checkpointSpots.Length > 0)
-            return checkpointSpots[checkpointSpots.Length - 1];
-
-        Debug.LogWarning($"[MeatballCheckpointReturnManager] No checkpoint spot exists for player index {index}.");
-        return null;
     }
 
     private void MovePlayerToSpot(MeatballPhysicsController player, Transform spot)
@@ -168,12 +195,16 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        if (checkpointSpots == null)
+        if (activeCheckpoint == null)
             return;
 
-        for (int i = 0; i < checkpointSpots.Length; i++)
+        Transform[] spots = activeCheckpoint.PlayerSpawnPoints;
+        if (spots == null)
+            return;
+
+        for (int i = 0; i < spots.Length; i++)
         {
-            Transform spot = checkpointSpots[i];
+            Transform spot = spots[i];
 
             if (spot == null)
                 continue;
