@@ -134,6 +134,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MeatballHostController
   ShowTopMostFoldoutHeaderGroup: 1
   _settings: {fileID: 11400000, guid: 54d9d1d1842e7dd4fb1fbb834545123e, type: 2}
+  _bounceSettings: {fileID: 11400000, guid: 30756f82d95a1114c864516719fa3ff6, type: 2}
 --- !u!114 &1238535911029876582
 MonoBehaviour:
   m_ObjectHideFlags: 0

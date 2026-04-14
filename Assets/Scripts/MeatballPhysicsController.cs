@@ -26,6 +26,7 @@ public class MeatballPhysicsController : NetworkBehaviour
     public static event Action<MeatballPhysicsController> OnMeatballDespawned;
 
     [SerializeField] private MeatballMovementSettings _settings;
+    [SerializeField] private MeatballBounceSettings _bounceSettings;
 
     // ── Latency-simulation queue ──────────────────────────────────────────────
     private struct InputPacket
@@ -223,6 +224,37 @@ public class MeatballPhysicsController : NetworkBehaviour
         }
 
         return hitCount > 0;
+    }
+
+    /// <summary>
+    /// Host-only meatball-vs-meatball bounce. Applies an impulse to both rigidbodies
+    /// along their separation axis, scaled by relative approach speed and capped by
+    /// the bounce settings asset.
+    /// </summary>
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!IsServer) return;
+        if (_bounceSettings == null) return;
+
+        if (!collision.rigidbody) return;
+        if (!collision.rigidbody.TryGetComponent(out MeatballPhysicsController other)) return;
+
+        // Each collision fires OnCollisionEnter on both meatballs. Only process once
+        // (from the lower instance ID) and apply the impulse to both ends here.
+        if (GetInstanceID() >= other.GetInstanceID()) return;
+
+        Vector3 separation = _rb.position - other._rb.position;
+        if (separation.sqrMagnitude < 1e-6f) separation = Vector3.right;
+        Vector3 dir = separation.normalized;
+
+        float approachSpeed = Mathf.Max(0f, Vector3.Dot(other._rb.linearVelocity - _rb.linearVelocity, dir));
+
+        float impulse = Mathf.Min(
+            _bounceSettings.baseBounceImpulse + _bounceSettings.velocityScale * approachSpeed,
+            _bounceSettings.maxBounceImpulse);
+
+        _rb.AddForce(dir * impulse, ForceMode.Impulse);
+        other._rb.AddForce(-dir * impulse, ForceMode.Impulse);
     }
 
 }
