@@ -637,7 +637,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 113
   _noodleRadius: 0.05
-  _pivotNormalOffset: 0.04
+  _pivotNormalOffset: 1
   _maxPivotsPerPair: 12
   _maxWrapsPerStep: 4
   _castStartOffset: 0.02

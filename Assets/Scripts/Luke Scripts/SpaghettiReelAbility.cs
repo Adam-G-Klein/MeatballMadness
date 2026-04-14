@@ -317,7 +317,7 @@ public class SpaghettiReelAbility : NetworkBehaviour
         // pulling directly toward this meatball when the rope hasn't wrapped around anything.
         Vector3 pullTarget;
         if (partnerTether != null && _tether != null)
-            pullTarget = partnerTether.GetFirstPathTarget(_tether);
+            pullTarget = partnerTether.GetFirstPathTargetWithNormalOffset(_tether, reelSettings.pivotNormalOffset);
         else
             pullTarget = selfRb.position;
 

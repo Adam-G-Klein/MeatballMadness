@@ -7,6 +7,13 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "SpaghettiReelSettings", menuName = "Meatball Madness/Spaghetti Reel Settings")]
 public class SpaghettiReelSettings : ScriptableObject
 {
+    [Header("Pivot Pull Target")]
+    [Tooltip("When the tether is wrapped around a pivot, the pull target is offset this many units away "
+           + "from the contact surface along the outward collision normal. "
+           + "A positive value moves the target off the obstacle surface; 0 uses the pivot point exactly.")]
+    [Min(0f)]
+    public float pivotNormalOffset = 0.5f;
+
     [Header("Pull")]
     [Tooltip("Base force used to pull the partner toward the player holding the reel key.")]
     public float reelForce = 55f;

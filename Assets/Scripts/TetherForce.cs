@@ -446,6 +446,24 @@ public class TetherForce : NetworkBehaviour
         return other._rb != null ? other._rb.position : other.transform.position;
     }
 
+    /// <summary>
+    /// Like <see cref="GetFirstPathTarget"/> but shifts the returned position away from the
+    /// contact surface by <paramref name="normalOffset"/> units along the outward contact normal.
+    /// When no pivot exists the partner's position is returned unchanged.
+    /// </summary>
+    public Vector3 GetFirstPathTargetWithNormalOffset(TetherForce other, float normalOffset)
+    {
+        if (_pivotsByOther.TryGetValue(other, out var pivots) && pivots.Count > 0)
+        {
+            Pivot p = pivots[0];
+            Vector3 worldPoint  = p.IsAlive ? p.ContactTransform.TransformPoint(p.LocalPoint)     : p.CachedWorld;
+            Vector3 worldNormal = p.IsAlive ? p.ContactTransform.TransformDirection(p.LocalNormal) : p.LocalNormal;
+            return worldPoint + worldNormal * normalOffset;
+        }
+
+        return other._rb != null ? other._rb.position : other.transform.position;
+    }
+
     // ── Gizmos ──────────────────────────────────────────────────────────────
 
     private void OnDrawGizmos()
@@ -478,9 +496,19 @@ public class TetherForce : NetworkBehaviour
             prev = transform.position;
             for (int k = 0; k < pivots.Count; k++)
             {
-                Vector3 w = pivots[k].CachedWorld;
+                Pivot   p = pivots[k];
+                Vector3 w = p.CachedWorld;
                 Gizmos.DrawLine(prev, w);
                 Gizmos.DrawWireSphere(w, _noodleRadius * 2f);
+
+                // Draw the contact normal as a yellow ray.
+                Vector3 worldNormal = p.IsAlive
+                    ? p.ContactTransform.TransformDirection(p.LocalNormal)
+                    : p.LocalNormal;
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawRay(w, worldNormal * 0.5f);
+                Gizmos.color = totalLen > _settings.noodleLength ? Color.red : Color.cyan;
+
                 prev = w;
             }
             Gizmos.DrawLine(prev, other.transform.position);

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f8ce46dc6da140e99838024558d4320, type: 3}
   m_Name: SpaghettiReelSettings
   m_EditorClassIdentifier: Assembly-CSharp::SpaghettiReelSettings
+  pivotNormalOffset: 1
   reelForce: 55
   reelStretchForce: 18
   targetDistance: 2.5
