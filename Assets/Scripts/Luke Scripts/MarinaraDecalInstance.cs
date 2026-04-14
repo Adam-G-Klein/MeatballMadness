@@ -11,6 +11,7 @@ public class MarinaraDecalInstance : MonoBehaviour
     private MarinaraTrailPool pool;
     private DecalProjector projector;
     private float timer;
+    private bool isInPool = true;
 
     public void SetPool(MarinaraTrailPool trailPool)
     {
@@ -24,18 +25,22 @@ public class MarinaraDecalInstance : MonoBehaviour
 
     private void OnEnable()
     {
+        isInPool = false;
         timer = lifetime;
     }
 
     private void Update()
     {
+        if (isInPool)
+            return;
+
         if (!useLifetime)
             return;
 
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
-            pool.ReturnToPool(this);
+            Despawn();
         }
     }
 
@@ -48,6 +53,9 @@ public class MarinaraDecalInstance : MonoBehaviour
         float randomAngle,
         Material materialOverride = null)
     {
+        isInPool = false;
+        timer = lifetime;
+
         transform.position = worldPosition;
 
         Quaternion alignToSurface = Quaternion.LookRotation(-surfaceNormal, Vector3.up);
@@ -64,6 +72,15 @@ public class MarinaraDecalInstance : MonoBehaviour
 
     public void Despawn()
     {
+        if (isInPool)
+            return;
+
+        isInPool = true;
         pool.ReturnToPool(this);
+    }
+
+    private void OnDisable()
+    {
+        isInPool = true;
     }
 }
