@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// A checkpoint trigger that becomes the active respawn checkpoint when touched by a player.
-/// It can hide itself after activation.
+/// It can hide itself after activation and can also disable extra assigned objects.
 /// </summary>
 [DisallowMultipleComponent]
 public class MeatballCheckpointTrigger : NetworkBehaviour
@@ -20,6 +20,10 @@ public class MeatballCheckpointTrigger : NetworkBehaviour
     [SerializeField] private GameObject visualRootToHide;
     [SerializeField] private bool disableAllCollidersOnTrigger = true;
     [SerializeField] private bool disableAllRenderersOnTrigger = true;
+
+    [Header("Extra Objects To Disable")]
+    [Tooltip("Any GameObjects assigned here will be set inactive when the checkpoint is triggered.")]
+    [SerializeField] private GameObject[] extraObjectsToDisable;
 
     private bool hasBeenTriggered;
 
@@ -59,6 +63,10 @@ public class MeatballCheckpointTrigger : NetworkBehaviour
         if (hideOnTrigger)
         {
             HideCheckpointClientRpc();
+        }
+        else
+        {
+            DisableExtraObjectsClientRpc();
         }
     }
 
@@ -101,6 +109,28 @@ public class MeatballCheckpointTrigger : NetworkBehaviour
             {
                 colliders[i].enabled = false;
             }
+        }
+
+        DisableExtraObjects();
+    }
+
+    [ClientRpc]
+    private void DisableExtraObjectsClientRpc()
+    {
+        DisableExtraObjects();
+    }
+
+    private void DisableExtraObjects()
+    {
+        if (extraObjectsToDisable == null || extraObjectsToDisable.Length == 0)
+            return;
+
+        for (int i = 0; i < extraObjectsToDisable.Length; i++)
+        {
+            if (extraObjectsToDisable[i] == null)
+                continue;
+
+            extraObjectsToDisable[i].SetActive(false);
         }
     }
 }
