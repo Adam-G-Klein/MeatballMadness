@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: -7091935692094853703}
   - component: {fileID: 8104633971256362341}
   - component: {fileID: -2746169110752537434}
+  - component: {fileID: 4196158280075945394}
   m_Layer: 7
   m_Name: PlayerMeatball
   m_TagString: Player
@@ -243,6 +244,7 @@ MonoBehaviour:
   _smoothingSteps: 8
   _nodeGizmoRadius: 0.07
   _nodeColor: {r: 0.29565808, g: 0.9490196, b: 0.19999999, a: 1}
+  _anchorColor: {r: 1, g: 0.3, b: 0.1, a: 1}
   _lineColor: {r: 0.95, g: 0.6, b: 0.2, a: 0.55}
 --- !u!120 &5773202127583854617
 LineRenderer:
@@ -602,6 +604,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f427302166dd44daa9e13d1a9a9ade26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MarinaraTrailPainter
+  ShowTopMostFoldoutHeaderGroup: 1
   minDistanceBetweenStamps: 0.18
   minTimeBetweenStamps: 0.04
   minSurfaceSpeedToPaint: 0.35
@@ -616,3 +619,25 @@ MonoBehaviour:
   maxOpacity: 1
   playerSpecificDecalMaterial: {fileID: 0}
   parentDecalsToHitObject: 1
+--- !u!114 &4196158280075945394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141278423515096476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 399342bbd102488408b6e596e8f408f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TetherForce
+  ShowTopMostFoldoutHeaderGroup: 1
+  _settings: {fileID: 11400000, guid: 54d9d1d1842e7dd4fb1fbb834545123e, type: 2}
+  _wrapMask:
+    serializedVersion: 2
+    m_Bits: 113
+  _noodleRadius: 0.05
+  _pivotNormalOffset: 0.04
+  _maxPivotsPerPair: 12
+  _maxWrapsPerStep: 4
+  _castStartOffset: 0.02

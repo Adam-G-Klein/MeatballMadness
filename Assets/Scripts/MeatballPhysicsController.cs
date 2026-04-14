@@ -135,39 +135,6 @@ public class MeatballPhysicsController : NetworkBehaviour
         DrainInputQueue();
         ApplyMovement();
         ApplyJump();
-        if (IsServer) ApplyTetherForces();
-    }
-
-    /// <summary>
-    /// Pulls this meatball toward any other registered meatball that has exceeded noodleLength.
-    /// Uses Hooke's law (F = k * stretch) plus a velocity-damping term to prevent oscillation.
-    /// Runs on the host only.
-    /// </summary>
-    private void ApplyTetherForces()
-    {
-        for (int i = 0; i < ServerInstances.Count; i++)
-        {
-            MeatballPhysicsController other = ServerInstances[i];
-            if (other == this) continue;
-
-            Vector3 delta = other._rb.position - _rb.position;
-            float distance = delta.magnitude;
-            float stretch = distance - _settings.noodleLength;
-            if (stretch <= 0f) continue;
-
-            Vector3 axis = delta / distance;
-
-            // Hooke's law spring: pulls this meatball toward other.
-            float springForce = _settings.tetherSpringK * stretch;
-
-            // Damping: damps the rate at which stretch is changing.
-            // Positive stretchRate = meatballs moving apart → adds to pull force.
-            // Negative stretchRate = meatballs closing → reduces pull force, damping overshoot.
-            float stretchRate = Vector3.Dot(other._rb.linearVelocity - _rb.linearVelocity, axis);
-            float dampingForce = _settings.tetherDamping * stretchRate;
-
-            _rb.AddForce(axis * (springForce + dampingForce), ForceMode.Force);
-        }
     }
 
     /// <summary>
@@ -258,18 +225,4 @@ public class MeatballPhysicsController : NetworkBehaviour
         return hitCount > 0;
     }
 
-    private void OnDrawGizmos()
-    {
-        if (_settings == null) return;
-
-        // Only draw each pair once: the lower-indexed meatball owns the line.
-        int myIndex = ServerInstances.IndexOf(this);
-        for (int i = myIndex + 1; i < ServerInstances.Count; i++)
-        {
-            MeatballPhysicsController other = ServerInstances[i];
-            float distance = Vector3.Distance(transform.position, other.transform.position);
-            Gizmos.color = distance > _settings.noodleLength ? Color.red : Color.blue;
-            Gizmos.DrawLine(transform.position, other.transform.position);
-        }
-    }
 }
