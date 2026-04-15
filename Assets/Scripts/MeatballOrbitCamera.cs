@@ -47,13 +47,13 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     [Tooltip("Follow speed (m/s) when the meatball reaches MaxLagDistance from the camera pivot.")]
     [SerializeField] float _maxFollowSpeed = 25f;
 
-    [Tooltip("Lag distance (m) at which the follow speed curve reaches its maximum. Beyond this, speed is clamped to MaxFollowSpeed.")]
+    [Tooltip("Lag distance (m) at which the follow speed curve reaches its maximum.")]
     [SerializeField] float _maxLagDistance = 8f;
 
-    [Tooltip("Speed curve: X = lag distance normalized 0 to 1 (0 = no lag, 1 = MaxLagDistance), Y = speed lerp 0 to 1 (0 = MinFollowSpeed, 1 = MaxFollowSpeed). Increase curvature to make the camera snap harder when far behind.")]
+    [Tooltip("Speed curve for follow smoothing.")]
     [SerializeField] AnimationCurve _followSpeedCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [Tooltip("If the target moves farther than this distance from the camera pivot, the pivot snaps instantly. Set to 0 to disable.")]
+    [Tooltip("If the target moves farther than this distance from the camera pivot, the pivot snaps instantly.")]
     [SerializeField] float _snapDistance = 20f;
 
     InputSystem_Actions _actions;
@@ -63,10 +63,22 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     Vector2 _lookInput;
     float _yaw;
     float _pitch = 20f;
-    bool _lookingToggled;
     Quaternion _currentRotation;
     Vector3 _smoothedPivot;
     bool _pivotInitialized;
+
+    // Public access for debugger
+    public float OrbitSpeedH
+    {
+        get => _orbitSpeedH;
+        set => _orbitSpeedH = Mathf.Max(0f, value);
+    }
+
+    public float OrbitSpeedV
+    {
+        get => _orbitSpeedV;
+        set => _orbitSpeedV = Mathf.Max(0f, value);
+    }
 
     void Awake()
     {
@@ -77,6 +89,10 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
     void Start()
     {
+        // Lock mouse for camera control
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         MeatballSolo meatball = FindFirstObjectByType<MeatballSolo>();
         if (meatball != null)
         {
@@ -135,11 +151,8 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
             _smoothedPivot = Vector3.MoveTowards(_smoothedPivot, targetPos, speed * Time.deltaTime);
         }
 
-#if UNITY_EDITOR
-        Vector2 effectiveLook = _lookingToggled ? _lookInput : Vector2.zero;
-#else
+        // Always rotate based on mouse movement
         Vector2 effectiveLook = _lookInput;
-#endif
 
         _yaw += effectiveLook.x * _orbitSpeedH * Time.deltaTime;
         _pitch = Mathf.Clamp(
@@ -174,10 +187,8 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     public void OnJump(InputAction.CallbackContext context) { }
     public void OnSprint(InputAction.CallbackContext context) { }
 
-    public void OnToggleLooking(InputAction.CallbackContext context)
-    {
-        _lookingToggled = Mathf.Approximately(context.ReadValue<float>(), 1);
-    }
+    // REQUIRED by Input System interface
+    public void OnToggleLooking(InputAction.CallbackContext context) { }
 
     public void OnMenu(InputAction.CallbackContext context) { }
 }
