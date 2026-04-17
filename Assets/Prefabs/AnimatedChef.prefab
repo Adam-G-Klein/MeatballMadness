@@ -54,7 +54,14 @@ MonoBehaviour:
   _leanFactor: 0.8
   _maxLeanAngle: 20
   _leanSmoothSpeed: 6
-  _spine1BoneName: Chef1
+  _spineBoneName: Spine
+  _maxSpineDeltaAngle: 45
+  _spineLerpSpeed: 8
+  _spineTwistScale: 1
+  _spineLeanScale: 0.5
+  _backwardLeanThreshold: 45
+  _backwardLeanAngle: 60
+  _forwardLeanAngle: 30
   _hatObjectName: Hat
   _glovesObjectName: Gloves
   _shirtObjectName: Shirt

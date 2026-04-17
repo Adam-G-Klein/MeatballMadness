@@ -41,7 +41,29 @@ public class ChefAnimator : MonoBehaviour
 
     [Header("Spine / Lean Bone")]
     [Tooltip("Name of the spine bone that receives the directional lean rotation.")]
-    [SerializeField] string _spine1BoneName = "Spine1";
+    [SerializeField] string _spineBoneName = "Spine";
+
+    [Header("Upper Body Input Response")]
+    [Tooltip("Maximum angle (degrees) the spine can twist/lean away from the velocity-facing direction.")]
+    [SerializeField] float _maxSpineDeltaAngle = 45f;
+
+    [Tooltip("How quickly the spine offset smoothly tracks the target.")]
+    [SerializeField] float _spineLerpSpeed = 8f;
+
+    [Tooltip("Scale for twist (Y-axis rotation). 1 = full clamped delta angle.")]
+    [SerializeField] float _spineTwistScale = 1f;
+
+    [Tooltip("Scale for lean (Z-axis rotation). Positive = lean into the turn.")]
+    [SerializeField] float _spineLeanScale = 0.5f;
+
+    [Tooltip("Angular range (degrees) around 180° that counts as 'opposite' the facing direction and triggers a backward lean.")]
+    [SerializeField] float _backwardLeanThreshold = 45f;
+
+    [Tooltip("Degrees to lean backward (X rotation) when input is opposite the facing direction.")]
+    [SerializeField] float _backwardLeanAngle = 15f;
+
+    [Tooltip("Degrees to lean forward (X rotation) when sprinting. Suppressed if a backward lean is active.")]
+    [SerializeField] float _forwardLeanAngle = 10f;
 
     [Header("Chef Skin Parts")]
     [Tooltip("Name of the Hat child GameObject inside the chef skin.")]
@@ -62,11 +84,16 @@ public class ChefAnimator : MonoBehaviour
     [Tooltip("One mesh per lobby slot. Index 0 = first player, 1 = second, etc.")]
     [SerializeField] List<Mesh> _shirtMeshes;
 
-    Transform _spine1Bone;
+    Transform _skinRoot;
+    Transform _spineBone;
     Animator _animator;
 
     Transform _followTarget;
     MeatballNetSync _netSync;
+    MeatballClientInputHandler _inputHandler;
+    float _smoothedSpineAngle;
+    float _smoothedBackwardLean;
+    float _smoothedForwardLean;
 
     void Awake()
     {
@@ -83,7 +110,11 @@ public class ChefAnimator : MonoBehaviour
         if (_animator == null)
             Debug.LogWarning("[ChefAnimator] No Animator found on chef skin.", this);
 
-        _spine1Bone = skin.transform;
+        _skinRoot = skin.transform;
+
+        _spineBone = FindInChildren(skin.transform, _spineBoneName);
+        if (_spineBone == null)
+            Debug.LogWarning($"[ChefAnimator] Spine bone '{_spineBoneName}' not found in chef skin.", this);
     }
 
     /// <summary>Called by MeatballChefController after spawning this prefab.</summary>
@@ -91,6 +122,7 @@ public class ChefAnimator : MonoBehaviour
     {
         _followTarget = target;
         _netSync = target.GetComponent<MeatballNetSync>();
+        _inputHandler = target.GetComponent<MeatballClientInputHandler>();
 
         if (_netSync == null)
         {
@@ -110,11 +142,11 @@ public class ChefAnimator : MonoBehaviour
     {
         _netSync.OnSkinIndexAssigned -= ApplySkin;
 
-        if (_spine1Bone == null) return;
+        if (_skinRoot == null) return;
 
-        ApplyMesh(_spine1Bone, _hatObjectName, _hatMeshes, index);
-        ApplyMesh(_spine1Bone, _glovesObjectName, _glovesMeshes, index);
-        ApplyMesh(_spine1Bone, _shirtObjectName, _shirtMeshes, index);
+        ApplyMesh(_skinRoot, _hatObjectName, _hatMeshes, index);
+        ApplyMesh(_skinRoot, _glovesObjectName, _glovesMeshes, index);
+        ApplyMesh(_skinRoot, _shirtObjectName, _shirtMeshes, index);
     }
 
     /// <summary>
@@ -159,10 +191,13 @@ public class ChefAnimator : MonoBehaviour
         if (_followTarget == null) return;
 
         // Phase 1: position skeleton root on top of meatball.
-        _spine1Bone.position = _followTarget.position + Vector3.up * (_meatballRadius + _heightOffset);
+        _skinRoot.position = _followTarget.position + Vector3.up * (_meatballRadius + _heightOffset);
 
-        // Phase 2: rotate chef to face velocity; apply lean.
+        // Phase 2: rotate chef to face velocity direction (lower body).
         UpdateFacingAndLean();
+
+        // Phase 3: twist/lean spine bone toward player input direction (upper body).
+        UpdateSpineLean();
     }
 
     void UpdateFacingAndLean()
@@ -179,10 +214,51 @@ public class ChefAnimator : MonoBehaviour
             _animator.SetFloat("Speed", normalizedSpeed);
         }
 
-        Quaternion targetFacing = Quaternion.LookRotation(horizontalVel.normalized, Vector3.up);
-
         // Keep the armature root upright; apply facing + lean only to Spine1.
-        if (_spine1Bone != null)
-            _spine1Bone.rotation = targetFacing; //* Quaternion.Euler(_currentLeanEuler);
+        if (_skinRoot != null && horizontalVel.magnitude > _minSpeedForFacing)
+        {
+            Quaternion targetFacing = Quaternion.LookRotation(horizontalVel.normalized, Vector3.up);
+            _skinRoot.rotation = Quaternion.Slerp(_skinRoot.rotation, targetFacing, _facingSpeed * Time.deltaTime);
+        }
     }
+
+    void UpdateSpineLean()
+    {
+        if (_spineBone == null || _inputHandler == null) return;
+
+        Vector2 input = _inputHandler.CameraRelativeInput;
+
+        float targetAngle = 0f;
+        float clampedTargetAngle = 0f;
+        if (input.sqrMagnitude > 0.01f)
+        {
+            Vector3 inputDir = new Vector3(input.x, 0f, input.y).normalized;
+            Vector3 facingDir = _skinRoot.forward;
+            facingDir.y = 0f;
+
+            if (facingDir.sqrMagnitude > 0.001f)
+            {
+                facingDir.Normalize();
+                targetAngle = Vector3.SignedAngle(facingDir, inputDir, Vector3.up);
+                clampedTargetAngle = Mathf.Clamp(targetAngle, -_maxSpineDeltaAngle, _maxSpineDeltaAngle);
+            }
+        }
+
+
+        bool isOpposite = input.sqrMagnitude > 0.01f && Mathf.Abs(targetAngle) > 180f - _backwardLeanThreshold;
+        float targetSideAngle   = isOpposite ? 0f : clampedTargetAngle;
+        float targetBackAngle   = isOpposite ? _backwardLeanAngle : 0f;
+        float targetForwardLean = (!isOpposite && _inputHandler.SprintHeld) ? _forwardLeanAngle : 0f;
+
+        _smoothedSpineAngle   = Mathf.Lerp(_smoothedSpineAngle,   targetSideAngle,   _spineLerpSpeed * Time.deltaTime);
+        _smoothedBackwardLean = Mathf.Lerp(_smoothedBackwardLean, targetBackAngle,   _spineLerpSpeed * Time.deltaTime);
+        _smoothedForwardLean  = Mathf.Lerp(_smoothedForwardLean,  targetForwardLean, _spineLerpSpeed * Time.deltaTime);
+
+        // Overlay forward/backward lean (X) + twist (Y) + side lean (Z) on top of whatever the Animator set.
+        // Backward lean suppresses forward lean via the targetForwardLean condition above.
+        float twist = _smoothedSpineAngle * _spineTwistScale;
+        float lean  = -_smoothedSpineAngle * _spineLeanScale;
+        _spineBone.localRotation = Quaternion.Euler(_smoothedForwardLean - _smoothedBackwardLean, twist, lean);
+    }
+
 }

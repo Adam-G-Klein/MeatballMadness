@@ -15,6 +15,19 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     private bool _jumpQueued;
     private bool _sprintHeld;
 
+    private readonly NetworkVariable<Vector2> _networkCameraRelativeInput = new(
+        default,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
+
+    /// <summary>
+    /// Current movement input rotated into world space relative to the camera.
+    /// Owners compute it locally; non-owners read the synced network variable.
+    /// </summary>
+    public Vector2 CameraRelativeInput => IsOwner ? ToCameraRelativeInput(_rawMove) : _networkCameraRelativeInput.Value;
+    public bool SprintHeld => _sprintHeld;
+
     private void Awake()
     {
         _controller = GetComponent<MeatballPhysicsController>();
@@ -43,12 +56,12 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     private void FixedUpdate()
     {
         Vector2 move = ToCameraRelativeInput(_rawMove);
+        _networkCameraRelativeInput.Value = move;
 
         // Consume the queued jump — latch is set by the callback, cleared here.
         bool jump = _jumpQueued;
         _jumpQueued = false;
 
-        // RPC work
         SubmitInputServerRpc(move, jump, _sprintHeld);
     }
 
