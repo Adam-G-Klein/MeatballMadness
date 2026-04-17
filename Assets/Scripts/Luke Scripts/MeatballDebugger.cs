@@ -4,7 +4,8 @@ using UnityEngine.InputSystem;
 /// <summary>
 /// Simple in-game debugger that can be toggled on and off.
 /// Supports changing orbit camera sensitivity, toggling music,
-/// and switching between fullscreen and windowed mode.
+/// switching between fullscreen and windowed mode,
+/// and toggling whether the camera requires RMB to rotate.
 /// </summary>
 public class MeatballDebugger : MonoBehaviour
 {
@@ -56,9 +57,7 @@ public class MeatballDebugger : MonoBehaviour
             return;
 
         if (Keyboard.current[toggleDebuggerKey].wasPressedThisFrame)
-        {
             debuggerVisible = !debuggerVisible;
-        }
 
         if (!debuggerVisible)
             return;
@@ -69,24 +68,19 @@ public class MeatballDebugger : MonoBehaviour
     private void HandleDebuggerInput()
     {
         if (Keyboard.current.digit1Key.wasPressedThisFrame)
-        {
             ChangeSensitivity(-sensitivityStep);
-        }
 
         if (Keyboard.current.digit2Key.wasPressedThisFrame)
-        {
             ChangeSensitivity(sensitivityStep);
-        }
 
         if (Keyboard.current.mKey.wasPressedThisFrame)
-        {
             ToggleMusic();
-        }
 
         if (Keyboard.current.fKey.wasPressedThisFrame)
-        {
             ToggleFullscreen();
-        }
+
+        if (Keyboard.current.rKey.wasPressedThisFrame)
+            ToggleRequireRightMouseButton();
     }
 
     private void ChangeSensitivity(float amount)
@@ -112,14 +106,22 @@ public class MeatballDebugger : MonoBehaviour
         Screen.fullScreen = !Screen.fullScreen;
     }
 
+    private void ToggleRequireRightMouseButton()
+    {
+        if (orbitCamera == null)
+            return;
+
+        orbitCamera.RequireRightMouseButtonToRotate = !orbitCamera.RequireRightMouseButtonToRotate;
+    }
+
     private void OnGUI()
     {
         if (!debuggerVisible)
             return;
 
-        const float width = 380f;
+        const float width = 420f;
         const float lineHeight = 24f;
-        float height = 220f;
+        float height = 250f;
 
         GUI.Box(new Rect(15f, 15f, width, height), "Debugger");
 
@@ -141,11 +143,17 @@ public class MeatballDebugger : MonoBehaviour
 
             GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"[2] Raise Sensitivity by {sensitivityStep:F0}");
             y += lineHeight;
+
+            GUI.Label(
+                new Rect(30f, y, width - 30f, lineHeight),
+                $"[R] Require RMB To Rotate: {(orbitCamera.RequireRightMouseButtonToRotate ? "ON" : "OFF")}"
+            );
+            y += lineHeight;
         }
         else
         {
             GUI.Label(new Rect(30f, y, width - 30f, lineHeight), "Orbit camera not assigned/found.");
-            y += lineHeight * 2f;
+            y += lineHeight * 3f;
         }
 
         string musicText = musicSource == null

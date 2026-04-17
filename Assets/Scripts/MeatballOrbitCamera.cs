@@ -56,6 +56,10 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     [Tooltip("If the target moves farther than this distance from the camera pivot, the pivot snaps instantly.")]
     [SerializeField] float _snapDistance = 20f;
 
+    [Header("Look")]
+    [Tooltip("If enabled, the player must hold right mouse button to rotate the camera with the mouse.")]
+    [SerializeField] private bool _requireRightMouseButtonToRotate = false;
+
     InputSystem_Actions _actions;
     InputSystem_Actions.PlayerActions _player;
 
@@ -80,6 +84,12 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
         set => _orbitSpeedV = Mathf.Max(0f, value);
     }
 
+    public bool RequireRightMouseButtonToRotate
+    {
+        get => _requireRightMouseButtonToRotate;
+        set => _requireRightMouseButtonToRotate = value;
+    }
+
     void Awake()
     {
         _actions = new InputSystem_Actions();
@@ -89,7 +99,6 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
     void Start()
     {
-        // Lock mouse for camera control
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
@@ -116,6 +125,7 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
                 _target = meatballClient.transform;
                 yield return null;
             }
+
             yield return null;
         }
     }
@@ -126,7 +136,8 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
     void LateUpdate()
     {
-        if (_target == null) return;
+        if (_target == null)
+            return;
 
         HandleScrollZoom();
 
@@ -151,8 +162,13 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
             _smoothedPivot = Vector3.MoveTowards(_smoothedPivot, targetPos, speed * Time.deltaTime);
         }
 
-        // Always rotate based on mouse movement
         Vector2 effectiveLook = _lookInput;
+
+        if (_requireRightMouseButtonToRotate)
+        {
+            if (Mouse.current == null || !Mouse.current.rightButton.isPressed)
+                effectiveLook = Vector2.zero;
+        }
 
         _yaw += effectiveLook.x * _orbitSpeedH * Time.deltaTime;
         _pitch = Mathf.Clamp(
@@ -169,10 +185,12 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
     void HandleScrollZoom()
     {
-        if (Mouse.current == null) return;
+        if (Mouse.current == null)
+            return;
 
         float scrollY = Mouse.current.scroll.ReadValue().y;
-        if (Mathf.Abs(scrollY) < 0.01f) return;
+        if (Mathf.Abs(scrollY) < 0.01f)
+            return;
 
         _orbitDistance -= scrollY * _scrollZoomSpeed;
         _orbitDistance = Mathf.Clamp(_orbitDistance, _minOrbitDistance, _maxOrbitDistance);
@@ -186,9 +204,6 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     public void OnMove(InputAction.CallbackContext context) { }
     public void OnJump(InputAction.CallbackContext context) { }
     public void OnSprint(InputAction.CallbackContext context) { }
-
-    // REQUIRED by Input System interface
     public void OnToggleLooking(InputAction.CallbackContext context) { }
-
     public void OnMenu(InputAction.CallbackContext context) { }
 }
