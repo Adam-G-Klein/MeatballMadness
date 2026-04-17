@@ -50,7 +50,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: 5280242033642886862}
   - {fileID: -9165188090858820013}
-  m_RendererFeatureMap: ced65e5727304749532eb898fdb5ce80
+  - {fileID: 3607865104225663470}
+  m_RendererFeatureMap: ced65e5727304749532eb898fdb5ce80eef9e56e32b61132
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -79,6 +80,19 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &3607865104225663470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 947fc07d5301cc344bbeb8c87c14a92f, type: 3}
+  m_Name: CleanOutlineRenderPassFeature
+  m_EditorClassIdentifier: Assembly-CSharp::CR.CleanOutlineRenderPassFeature
+  m_Active: 1
 --- !u!114 &5280242033642886862
 MonoBehaviour:
   m_ObjectHideFlags: 0

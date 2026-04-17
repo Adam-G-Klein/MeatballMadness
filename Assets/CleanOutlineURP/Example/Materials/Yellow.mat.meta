@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d3658857af8e9704aac51f8eed18213f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 238328
+  packageName: Clean Outline URP
+  packageVersion: 1.46
+  assetPath: Assets/CleanOutlineURP/Example/Materials/Yellow.mat
+  uploadId: 731384

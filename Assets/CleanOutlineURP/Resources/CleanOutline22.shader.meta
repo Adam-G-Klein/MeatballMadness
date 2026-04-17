@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: a5fff0212aa5ab54f97eafede4771f85
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 238328
+  packageName: Clean Outline URP
+  packageVersion: 1.46
+  assetPath: Assets/CleanOutlineURP/Resources/CleanOutline22.shader
+  uploadId: 731384
