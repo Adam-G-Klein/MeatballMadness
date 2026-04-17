@@ -22,9 +22,11 @@ using UnityEngine;
 /// goal: a meatball dangling below a ledge is pulled up toward the ledge edge, not diagonally
 /// toward its partner through the ledge itself.
 ///
-/// Pivot maintenance runs on every peer (host + clients) so SpaghettiRenderer sees a consistent
-/// wrapped path on all machines. Force application remains host-authoritative, matching the
-/// networking model in CLAUDE.md.
+/// Pivot maintenance and force application both run on the host only. The host syncs resolved
+/// world-space pivot positions to clients via a ClientRpc each FixedUpdate so that
+/// SpaghettiRenderer (which calls <see cref="CopyPathTo"/>) sees a consistent wrapped path
+/// on all machines without running the geometry-dependent algorithm independently — which
+/// would diverge due to differences in interpolation and timing.
 ///
 /// LIMITATIONS:
 /// - Pivots are bound to the Transform of the collider they caught on (local-space point +
@@ -36,9 +38,9 @@ using UnityEngine;
 /// - The unwind/wrap pair is a heuristic, not a true geodesic. It handles common shapes
 ///   (ledges, posts, convex corners) well and degrades to flicker rather than explosion in
 ///   pathological concave pockets. A hard cap on pivot count prevents runaway growth.
-/// - Host and client run the algorithm independently. Because the algorithm is deterministic
-///   given identical geometry and meatball positions, they agree closely; any tiny drift is
-///   cosmetic (it only affects the rendered chain — not physics, which runs only on host).
+/// - Client-side pivot positions arrive one network tick behind the host's simulation. For a
+///   silly co-op game this latency is acceptable and consistent with the overall
+///   host-authoritative model.
 /// </summary>
 [RequireComponent(typeof(Rigidbody), typeof(MeatballPhysicsController))]
 public class TetherForce : NetworkBehaviour
@@ -115,8 +117,12 @@ public class TetherForce : NetworkBehaviour
 
     // Pivots between this meatball and each other meatball, keyed by the other's TetherForce.
     // Contains ONLY intermediate pivots; the meatball endpoints are implicit and appended at
-    // force-application / CopyPathTo time.
+    // force-application / CopyPathTo time. Populated on the server only.
     private readonly Dictionary<TetherForce, List<Pivot>> _pivotsByOther = new();
+
+    // Client-side storage for synced pivot world positions, received from the host via ClientRpc.
+    // Keyed by the other TetherForce. Lists are reused across ticks to avoid allocation.
+    private readonly Dictionary<TetherForce, List<Vector3>> _clientPivotPositions = new();
 
     // Previous tick's total wrapped-path length per partner, used for rate-of-change damping.
     private readonly Dictionary<TetherForce, float> _prevPathLenByOther = new();
@@ -144,16 +150,17 @@ public class TetherForce : NetworkBehaviour
     {
         Instances.Remove(this);
         _pivotsByOther.Clear();
+        _clientPivotPositions.Clear();
         _prevPathLenByOther.Clear();
     }
 
     private void FixedUpdate()
     {
-        // Pivot maintenance runs on every peer so the renderer sees the same path everywhere.
-        UpdateAllPivots();
+        if (!IsServer) return;
 
-        // Physics force is host-authoritative. Non-host peers leave the pivot list alone for rendering.
-        if (IsServer) ApplyTetherForces();
+        UpdateAllPivots();
+        SyncPivotsToClients();
+        ApplyTetherForces();
     }
 
     // ── Pivot maintenance ───────────────────────────────────────────────────
@@ -336,6 +343,81 @@ public class TetherForce : NetworkBehaviour
             QueryTriggerInteraction.Ignore);
     }
 
+    // ── Pivot sync (host → clients) ───────────────────────────────────────
+
+    /// <summary>
+    /// Sends this instance's resolved pivot world positions to all clients via a single
+    /// batched ClientRpc. Called every FixedUpdate on the server, after pivots have been
+    /// updated and their CachedWorld values are fresh.
+    /// </summary>
+    private void SyncPivotsToClients()
+    {
+        // Build flattened arrays: one entry in otherIds/counts per pair, all pivot
+        // positions concatenated into a single positions array.
+        int pairCount = 0;
+        int totalPivots = 0;
+        foreach (var kvp in _pivotsByOther)
+        {
+            if (kvp.Key == null) continue;
+            pairCount++;
+            totalPivots += kvp.Value.Count;
+        }
+
+        var otherIds = new ulong[pairCount];
+        var counts   = new int[pairCount];
+        var positions = new Vector3[totalPivots];
+
+        int pair = 0;
+        int pos  = 0;
+        foreach (var kvp in _pivotsByOther)
+        {
+            TetherForce other = kvp.Key;
+            if (other == null) continue;
+            List<Pivot> pivots = kvp.Value;
+
+            otherIds[pair] = other.NetworkObjectId;
+            counts[pair]   = pivots.Count;
+            for (int i = 0; i < pivots.Count; i++)
+                positions[pos++] = pivots[i].CachedWorld;
+            pair++;
+        }
+
+        SyncPivotsClientRpc(otherIds, positions, counts);
+    }
+
+    [ClientRpc]
+    private void SyncPivotsClientRpc(ulong[] otherIds, Vector3[] allPositions, int[] countsPerPair)
+    {
+        if (IsServer) return; // host already has authoritative data
+
+        // Clear all existing lists (reuse the List objects to avoid allocation).
+        foreach (var kvp in _clientPivotPositions)
+            kvp.Value.Clear();
+
+        int offset = 0;
+        for (int i = 0; i < otherIds.Length; i++)
+        {
+            int count = countsPerPair[i];
+
+            if (NetworkManager.SpawnManager.SpawnedObjects.TryGetValue(otherIds[i], out var netObj))
+            {
+                var other = netObj.GetComponent<TetherForce>();
+                if (other != null)
+                {
+                    if (!_clientPivotPositions.TryGetValue(other, out var list))
+                    {
+                        list = new List<Vector3>(4);
+                        _clientPivotPositions[other] = list;
+                    }
+                    for (int j = 0; j < count; j++)
+                        list.Add(allPositions[offset + j]);
+                }
+            }
+
+            offset += count;
+        }
+    }
+
     // ── Force application (host only) ───────────────────────────────────────
 
     /// <summary>
@@ -406,24 +488,36 @@ public class TetherForce : NetworkBehaviour
     /// <paramref name="outPath"/>, clearing it first. The output is
     /// <c>[this.position, ...pivots..., other.position]</c> and always has at least 2 entries.
     ///
-    /// Safe to call on host or client. If no pivot record exists yet (first tick for this pair)
-    /// the path contains only the two endpoints — rendering as a straight line, matching legacy behavior.
+    /// Safe to call on host or client. On the host, pivots are resolved fresh from their
+    /// contact Transforms (interpolated visual pose). On clients, pivots come from the latest
+    /// synced world positions received via ClientRpc. If no pivot record exists yet (first tick
+    /// for this pair) the path contains only the two endpoints — rendering as a straight line.
     /// </summary>
     public void CopyPathTo(TetherForce other, List<Vector3> outPath)
     {
         outPath.Clear();
         outPath.Add(_rb != null ? _rb.position : transform.position);
-        if (_pivotsByOther.TryGetValue(other, out var pivots))
+
+        if (IsServer)
         {
-            // Renderer runs in LateUpdate — resolve pivot world positions fresh here so the
-            // rope follows the obstacle's interpolated visual pose within a frame, rather
-            // than using the FixedUpdate-stale CachedWorld.
-            for (int k = 0; k < pivots.Count; k++)
+            if (_pivotsByOther.TryGetValue(other, out var pivots))
             {
-                Pivot p = pivots[k];
-                outPath.Add(p.IsAlive ? p.ContactTransform.TransformPoint(p.LocalPoint) : p.CachedWorld);
+                // Renderer runs in LateUpdate — resolve pivot world positions fresh here so the
+                // rope follows the obstacle's interpolated visual pose within a frame, rather
+                // than using the FixedUpdate-stale CachedWorld.
+                for (int k = 0; k < pivots.Count; k++)
+                {
+                    Pivot p = pivots[k];
+                    outPath.Add(p.IsAlive ? p.ContactTransform.TransformPoint(p.LocalPoint) : p.CachedWorld);
+                }
             }
         }
+        else if (_clientPivotPositions.TryGetValue(other, out var positions))
+        {
+            for (int k = 0; k < positions.Count; k++)
+                outPath.Add(positions[k]);
+        }
+
         outPath.Add(other._rb != null ? other._rb.position : other.transform.position);
     }
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Game Concept
 
-**Meatball Madness** is a 3D physics-based co-op game for 2+ players (initially 2). Each player controls a meatball connected to their partner by an elastic spaghetti tether. Players must coordinate to navigate obstacle courses — the tether's elastic physics is the central challenge and source of humor.
+**Meatball Madness** is a 3D physics-based co-op game for 2 - 4 players (Every feature should support up to 4 players). Each player controls a meatball connected to their partner by an elastic spaghetti tether. Players must coordinate to navigate obstacle courses — the tether's elastic physics is the central challenge and source of humor.
 
 Core appeal: silly difficulty, forced communication, emergent chaos from the tether constraint.
 
@@ -30,8 +30,8 @@ Use Unity `Rigidbody` components for the meatballs. Apply movement as forces in 
 **Do not use `SpringJoint` or any Unity joint for the spaghetti tether.** Unity joints are known to explode (diverge to infinity) at high stiffness and are hard to tune for an elastic/bouncy feel.
 
 Instead:
-- **Force layer:** In `FixedUpdate`, measure the distance between the two meatball `Rigidbody` positions. If distance exceeds rest length, apply `AddForce` to each meatball along the connecting vector, scaled by stretch amount (Hooke's law: `F = k * stretch`). Include a damping term proportional to relative velocity to prevent endless oscillation.
-- **Visual layer:** Render the spaghetti using 3–5 Verlet integration points that don't participate in physics — they just follow the meatball endpoints each frame and sag/swing cosmetically. Use a `LineRenderer` or ribbon mesh.
+- **Force layer: In TetherForce.cs** In `FixedUpdate`, measure the distance between the two meatball `Rigidbody` positions. If distance exceeds rest length, apply `AddForce` to each meatball along the connecting vector, scaled by stretch amount (Hooke's law: `F = k * stretch`). Include a damping term proportional to relative velocity to prevent endless oscillation.
+- **Visual layer: In SpaghettiRenderer.cs** Render the spaghetti using 3–5 Verlet integration points that don't participate in physics — they just follow the meatball endpoints each frame and sag/swing cosmetically. Use a `LineRenderer` or ribbon mesh.
 
 **Why custom:** Stable at any stiffness, no solver explosions, trivially networkable (only the endpoints matter), and gives direct control over the "feel" of the tether.
 
@@ -45,7 +45,7 @@ Use **Netcode for GameObjects (NGO)** with a host-authoritative model:
 - Sync `(position, velocity, angularVelocity)` for each meatball via a custom `NetworkBehaviour` — do not rely on `NetworkRigidbody` alone, as it only syncs transform and fights the physics simulation
 - The tether force runs on the host only; clients receive meatball positions and render the tether visually from those
 
-**Why host-authoritative:** Sidesteps PhysX non-determinism entirely. The host simulation is the single source of truth. Simpler than lockstep or rollback netcode for a 2-player co-op game.
+**Why host-authoritative:** Sidesteps PhysX non-determinism entirely. The host simulation is the single source of truth. Simpler than lockstep or rollback netcode for a 4-player co-op game.
 
 **Tradeoff accepted:** The client's meatball will lag one round-trip behind the host's. Tether forces will feel slightly delayed for the non-host player. For a silly co-op game this is acceptable and can even read as intentional chaos.
 
@@ -64,6 +64,5 @@ The preferred pattern is the **callback subscription** method:
 ## Development Workflow
 
 - Build and iterate from the Unity Editor (no CLI build scripts)
-- `Assets/Scenes/AdamScene.unity` and `Assets/Scenes/LukeScene.unity` are personal sandbox scenes per developer — do not treat these as shippable
 - Build shared gameplay as **prefabs** (Meatball prefab, Tether prefab, etc.) so changes propagate across scenes without merge conflicts
 - Unity `.unity` scene files are YAML and will conflict — minimize scene-level changes, prefer prefab-based workflows
