@@ -1097,6 +1097,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   _snapDistance: 20
+  _requireRightMouseButtonToRotate: 0
 --- !u!114 &308134696
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2432,6 +2433,7 @@ MonoBehaviour:
   maxSensitivity: 600
   musicObject: {fileID: 987475004}
   musicSource: {fileID: 987475005}
+  startFullscreen: 1
   showDebuggerOnStart: 1
 --- !u!4 &790065970
 Transform:
@@ -11618,11 +11620,29 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.x
       value: 90
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4262655506668840910, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5549712433845610870, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5258995179119565745}
+    - targetCorrespondingSourceObject: {fileID: 5549712433845610870, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5258995179119565744}
+    - targetCorrespondingSourceObject: {fileID: 5549712433845610870, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5258995179119565747}
+    - targetCorrespondingSourceObject: {fileID: 5549712433845610870, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5258995179119565746}
   m_SourcePrefab: {fileID: 100100000, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
+--- !u!1 &1089580518961014414 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5549712433845610870, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
+  m_PrefabInstance: {fileID: 1089580518961014413}
+  m_PrefabAsset: {fileID: 0}
 --- !u!33 &4299754946328461182
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -11839,6 +11859,88 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7508722691261250308, guid: 35f661bea0fbf48b9ad0e2e154a7111e, type: 3}
   m_PrefabInstance: {fileID: 1089580518961014413}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5258995179119565744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089580518961014414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 219771278
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!54 &5258995179119565745
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089580518961014414}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &5258995179119565746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089580518961014414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32c6cffe1029b4c4fb1208fb9626c608, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MMMovementRotator
+  rotationSpeed: {x: 0, y: 0, z: 90}
+  rotateObject: 1
+--- !u!114 &5258995179119565747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1089580518961014414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0f36d958f0596f4793f388dbabd5f91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MMMovement
+  ShowTopMostFoldoutHeaderGroup: 1
+  positionSmoothing: 0
+  rotationSmoothing: 0
+  snapDistance: 0
 --- !u!1 &8487167653903709700
 GameObject:
   m_ObjectHideFlags: 0
