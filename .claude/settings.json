@@ -6,7 +6,8 @@
       "Bash(grep -v \"^  m_Name: $\")",
       "Bash(2)",
       "Bash(grep -E \"\\\\.\\(asset|cs\\)$\")",
-      "Bash(grep -r \"SessionAdded\\\\|AddingSessionStarted\" c:UsersagkleUnityMeatballMadnessAssets --include=*.cs -A 5)"
+      "Bash(grep -r \"SessionAdded\\\\|AddingSessionStarted\" c:UsersagkleUnityMeatballMadnessAssets --include=*.cs -A 5)",
+      "Bash(grep -E \"\\\\.cs$\")"
     ]
   }
 }
