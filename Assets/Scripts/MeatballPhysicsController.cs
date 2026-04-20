@@ -5,13 +5,22 @@ using UnityEngine;
 
 
 /// <summary>
-/// Host-only physics controller. Receives input from MeatballClientInputHandler via ServerRpc
-/// and drives the Rigidbody with AddForce. Disabled on non-host clients — they receive
-/// state from MeatballNetSync instead.
+/// Host-only physics controller. Owns a tick-keyed input buffer fed by
+/// <see cref="MeatballClientInputHandler"/>, and each FixedUpdate looks up the input
+/// for the current <see cref="NetworkTick"/> and applies it via <see cref="MeatballMotor"/>.
+/// Disabled on non-host clients — they receive state from MeatballNetSync instead.
 ///
-/// All tuning lives in a MeatballMovementSettings ScriptableObject so values can be shared
-/// with MeatballSolo and tweaked without touching code.
+/// Missing-input policy (Rocket League "decay by age"):
+///  - If input for tick T is present: apply it.
+///  - If absent but a newer tick arrives later: that newer frame wins and is stored,
+///    but the older tick stays gapped.
+///  - If absent: repeat the last known input for up to _maxRepeatTicks. After that,
+///    zero move and release jump/sprint/reel.
+///
+/// Collision impulses are recorded per-tick and drained by MeatballNetSync into the
+/// snapshot sidecar for broadcast to clients (unused until rollout step 8).
 /// </summary>
+[DefaultExecutionOrder(0)]
 [RequireComponent(typeof(Rigidbody), typeof(Collider), typeof(NetworkObject))]
 public class MeatballPhysicsController : NetworkBehaviour
 {
@@ -29,20 +38,37 @@ public class MeatballPhysicsController : NetworkBehaviour
     [SerializeField] private MeatballMovementSettings _settings;
     [SerializeField] private MeatballBounceSettings _bounceSettings;
 
-    // ── Pending state consumed by FixedUpdate ─────────────────────────────────
-    private Vector2 _pendingMove;
-    private bool _pendingJump;
-    private bool _pendingSprint;
+    [Header("Input Buffering (host)")]
+    [Tooltip("If an input frame for the current tick is missing, repeat the last known " +
+             "input for up to this many ticks before zeroing move/jump/sprint/reel.")]
+    [SerializeField] private int _maxRepeatTicks = 10;
+
+    [Tooltip("Log a line each time a tick is processed: present / repeated / zeroed / future.")]
+    [SerializeField] private bool _logInputApplication;
+
+    [Tooltip("Log every collision impulse that gets recorded for the snapshot sidecar.")]
+    [SerializeField] private bool _logCollisionImpulses = true;
+
+    // ── Tick-keyed input buffer (host only) ───────────────────────────────────
+    private readonly Dictionary<ulong, InputFrame> _inputsByTick = new();
+    private InputFrame _lastAppliedInput;
+    private int _ticksSinceFreshInput;
+    private ulong _lastAppliedTick;
+
+    // ── Public accessors for satellite scripts (e.g. SpaghettiReelAbility) ───
+    public bool ReelHeld { get; private set; }
+    public Vector2 LastAppliedMove => _lastAppliedInput.move;
+    public ulong LastAppliedInputTick => _lastAppliedTick;
+
+    // ── Collision impulse recording for the snapshot sidecar ──────────────────
+    private readonly List<CollisionImpulse> _pendingCollisionImpulses = new();
 
     private Rigidbody _rb;
-
-    // ── Ramp jump augment ─────────────────────────────────────────────────────
     private float _jumpHeightRampAugment;
-    // Static buffer avoids per-frame allocation for ground overlap queries.
     private static readonly Collider[] _groundHits = new Collider[8];
 
-    /// <summary>Exposes the Rigidbody for server-side tether force application.</summary>
     public Rigidbody Rigidbody => _rb;
+    public MeatballMovementSettings Settings => _settings;
 
     private void Awake()
     {
@@ -52,17 +78,12 @@ public class MeatballPhysicsController : NetworkBehaviour
         ApplyPhysicsMaterial();
     }
 
-    /// <summary>Pushes drag values from the settings asset onto the Rigidbody.</summary>
     private void ApplyRigidbodySettings()
     {
         _rb.linearDamping = _settings.linearDrag;
         _rb.angularDamping = _settings.angularDrag;
     }
 
-    /// <summary>
-    /// Creates a runtime PhysicsMaterial from the settings asset and assigns it to the
-    /// meatball's Collider so friction and bounciness match the tuning data.
-    /// </summary>
     private void ApplyPhysicsMaterial()
     {
         var mat = new PhysicsMaterial("MeatballPhysics")
@@ -82,7 +103,7 @@ public class MeatballPhysicsController : NetworkBehaviour
         {
             ServerInstances.Add(this);
             OnMeatballSpawned?.Invoke(this);
-            Debug.Log($"[Tether] Meatball registered. Server count: {ServerInstances.Count}");
+            Debug.Log($"[MeatballPhysics] Meatball registered (owner={OwnerClientId}). Server count: {ServerInstances.Count}");
         }
     }
 
@@ -93,99 +114,154 @@ public class MeatballPhysicsController : NetworkBehaviour
     }
 
     /// <summary>
-    /// Called by MeatballClientInputHandler's ServerRpc. Runs on the host only.
-    /// Updates pending state immediately; FixedUpdate consumes it next tick.
+    /// Called by MeatballClientInputHandler's redundant ServerRpc. Stores each frame
+    /// in the tick-keyed dictionary; duplicates are ignored so redundancy costs nothing
+    /// beyond the bytes on the wire.
     /// </summary>
-    public void ReceiveInput(Vector2 move, bool jump, bool sprint)
+    public void ReceiveInputs(InputFrame[] frames)
     {
-        _pendingMove = move;
-        _pendingSprint = sprint;
-        if (jump) _pendingJump = true;
+        if (!IsServer || frames == null) return;
+        for (int i = 0; i < frames.Length; i++)
+        {
+            var f = frames[i];
+            // Never overwrite — the packet with the earliest tick wins on duplicate keys
+            // (the semantics are the same either way since frames for the same tick must
+            // be identical, but skipping the write keeps this allocation-free).
+            if (!_inputsByTick.ContainsKey(f.tick))
+                _inputsByTick.Add(f.tick, f);
+        }
     }
 
     private void FixedUpdate()
     {
-        ApplyMovement();
-        ApplyJump();
-    }
+        if (!IsServer) return;
 
-    private void ApplyMovement()
-    {
-        if (_pendingMove == Vector2.zero) return;
+        ulong currentTick = NetworkTick.Instance != null ? NetworkTick.Instance.Current : 0;
 
-        bool grounded = IsGrounded();
+        InputFrame frame = ResolveInputForTick(currentTick);
+        ReelHeld = frame.reel;
 
-        // Sprint is only allowed while grounded.
-        bool allowSprint = grounded && _pendingSprint;
+        bool grounded = MeatballMotor.ComputeGrounded(
+            _rb.position,
+            _rb.linearVelocity,
+            _settings,
+            _groundHits,
+            out _jumpHeightRampAugment);
 
-        // Airborne movement is capped to walk speed.
-        float speedCap = allowSprint
-            ? _settings.maxRunHorizontalSpeed
-            : _settings.maxWalkHorizontalSpeed;
+        MeatballMotor.ApplyTick(
+            _rb, frame, _settings, grounded, _jumpHeightRampAugment,
+            out bool jumpConsumed);
 
-        Vector3 horizontalVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
-        if (horizontalVel.magnitude >= speedCap) return;
+        // Clear the jump bit on the remembered frame so the decay-by-age "repeat last
+        // input" rule doesn't cause the host to fire a second jump once the meatball
+        // becomes grounded mid-repeat-window.
+        if (jumpConsumed) _lastAppliedInput.jump = false;
 
-        // Reduce control authority while airborne.
-        float forceMult = grounded ? 1f : _settings.airControlFraction;
-
-        Vector3 moveDir = new Vector3(_pendingMove.x, 0f, _pendingMove.y);
-        _rb.AddForce(moveDir * (_settings.moveForce * forceMult), ForceMode.Force);
-    }
-
-    private float RampAugmentHeight() => _jumpHeightRampAugment;
-
-    private void ApplyJump()
-    {
-        if (!_pendingJump) return;
-        if (!IsGrounded()) return; // hold the latch until we touch down
-
-        _rb.AddForce(Vector3.up * (_settings.jumpImpulse + RampAugmentHeight()), ForceMode.Impulse);
-        _pendingJump = false;
+        PruneOldInputs(currentTick);
     }
 
     /// <summary>
-    /// Checks whether the meatball is touching ground. As a side effect, updates
-    /// <see cref="_jumpHeightRampAugment"/> when a "Ramp"-layer object is detected:
-    /// augment = dot(horizontalVelocity, rampDirection) * jumpHeightAugment.
+    /// Decide which InputFrame to apply on tick T. Implements the decay-by-age rule.
+    /// Includes a lookback step: if tick T is missing but an input for an earlier tick
+    /// arrived after its own tick was already processed (possible under RPC-scheduling
+    /// races), pick up the newest such frame before falling back to repeat-last-input.
     /// </summary>
-    private bool IsGrounded()
+    private InputFrame ResolveInputForTick(ulong tick)
     {
-        Vector3 origin = transform.position + Vector3.down * (_settings.groundCheckRadius - 0.05f);
-
-        // Combined mask: normal ground layers plus the Ramp layer so ramp objects
-        // are captured in the same query without requiring the designer to add them
-        // to groundMask manually.
-        int rampLayer = LayerMask.NameToLayer("Ramp");
-        int combinedMask = _settings.groundMask | (1 << rampLayer);
-
-        int hitCount = Physics.OverlapSphereNonAlloc(
-            origin,
-            _settings.groundCheckRadius,
-            _groundHits,
-            combinedMask,
-            QueryTriggerInteraction.Ignore
-        );
-
-        _jumpHeightRampAugment = 0f;
-        for (int i = 0; i < hitCount; i++)
+        if (_inputsByTick.TryGetValue(tick, out var fresh))
         {
-            if (_groundHits[i].gameObject.layer != rampLayer) continue;
-
-            if (!_groundHits[i].TryGetComponent(out RampSettings ramp)) break;
-
-            Vector2 horizontalVel = new(_rb.linearVelocity.x, _rb.linearVelocity.z);
-            _jumpHeightRampAugment = Vector2.Dot(horizontalVel, ramp.rampDirection) * ramp.jumpHeightAugment;
-            break;
+            _lastAppliedInput = fresh;
+            _lastAppliedInput.tick = tick;
+            _ticksSinceFreshInput = 0;
+            _lastAppliedTick = tick;
+            if (_logInputApplication)
+                Debug.Log($"[MeatballPhysics] tick={tick} FRESH move={fresh.move} jump={fresh.jump} sprint={fresh.sprint} reel={fresh.reel}");
+            return fresh;
         }
 
-        return hitCount > 0;
+        if (TryFindLatestUnconsumed(tick, out var recovered))
+        {
+            _lastAppliedInput = recovered;
+            _lastAppliedInput.tick = tick;
+            _ticksSinceFreshInput = 0;
+            _lastAppliedTick = tick;
+            if (_logInputApplication)
+                Debug.Log($"[MeatballPhysics] tick={tick} RECOVERED (from tick={recovered.tick}) move={recovered.move} jump={recovered.jump}");
+            return _lastAppliedInput;
+        }
+
+        _ticksSinceFreshInput++;
+
+        if (_ticksSinceFreshInput <= _maxRepeatTicks)
+        {
+            if (_logInputApplication)
+                Debug.Log($"[MeatballPhysics] tick={tick} REPEAT (age={_ticksSinceFreshInput}) move={_lastAppliedInput.move}");
+            _lastAppliedTick = tick;
+            return _lastAppliedInput;
+        }
+
+        // Beyond the cap — zero out. Also clears the remembered latch so a stale jump/sprint
+        // doesn't sit on the controller indefinitely.
+        _lastAppliedInput = InputFrame.Zero(tick);
+        _lastAppliedTick = tick;
+        if (_logInputApplication)
+            Debug.LogWarning($"[MeatballPhysics] tick={tick} ZEROED (no input for {_ticksSinceFreshInput} ticks)");
+        return _lastAppliedInput;
+    }
+
+    /// <summary>
+    /// Scans the input dict for the newest entry with tick &gt; <see cref="_lastAppliedTick"/>
+    /// and tick &lt;= <paramref name="upToTick"/>. Covers the case where an input for tick T
+    /// landed in the dict after tick T was already processed (RPC scheduling race), so the
+    /// controller can still apply it on T+1 instead of leaving the frame stranded.
+    /// </summary>
+    private bool TryFindLatestUnconsumed(ulong upToTick, out InputFrame frame)
+    {
+        frame = default;
+        bool found = false;
+        ulong bestTick = 0;
+        foreach (var kvp in _inputsByTick)
+        {
+            ulong t = kvp.Key;
+            if (t <= _lastAppliedTick) continue;
+            if (t > upToTick) continue;
+            if (!found || t > bestTick)
+            {
+                bestTick = t;
+                frame = kvp.Value;
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// Drops entries older than the max-repeat window so the dictionary doesn't grow
+    /// without bound. We keep a small trailing margin in case reordered packets arrive
+    /// moments after their tick has been processed.
+    /// </summary>
+    private void PruneOldInputs(ulong currentTick)
+    {
+        const int trailingMargin = 8;
+        if (currentTick <= (ulong)(_maxRepeatTicks + trailingMargin)) return;
+
+        ulong cutoff = currentTick - (ulong)(_maxRepeatTicks + trailingMargin);
+        List<ulong> toRemove = null;
+        foreach (var kvp in _inputsByTick)
+        {
+            if (kvp.Key < cutoff)
+            {
+                toRemove ??= new List<ulong>();
+                toRemove.Add(kvp.Key);
+            }
+        }
+        if (toRemove == null) return;
+        for (int i = 0; i < toRemove.Count; i++) _inputsByTick.Remove(toRemove[i]);
     }
 
     /// <summary>
     /// Host-only meatball-vs-meatball bounce. Applies an impulse to both rigidbodies
-    /// along their separation axis, scaled by relative approach speed and capped by
-    /// the bounce settings asset.
+    /// and records it into each side's pending collision list for the snapshot sidecar.
     /// </summary>
     private void OnCollisionEnter(Collision collision)
     {
@@ -209,8 +285,43 @@ public class MeatballPhysicsController : NetworkBehaviour
             _bounceSettings.baseBounceImpulse + _bounceSettings.velocityScale * approachSpeed,
             _bounceSettings.maxBounceImpulse);
 
-        _rb.AddForce(dir * impulse, ForceMode.Impulse);
-        other._rb.AddForce(-dir * impulse, ForceMode.Impulse);
+        Vector3 selfImpulse = dir * impulse;
+        Vector3 otherImpulse = -dir * impulse;
+
+        _rb.AddForce(selfImpulse, ForceMode.Impulse);
+        other._rb.AddForce(otherImpulse, ForceMode.Impulse);
+
+        ulong tick = NetworkTick.Instance != null ? NetworkTick.Instance.Current : 0;
+        Vector3 contact = collision.contactCount > 0 ? collision.GetContact(0).point : _rb.position;
+
+        RecordCollisionImpulse(tick, selfImpulse, contact, other.OwnerClientId);
+        other.RecordCollisionImpulse(tick, otherImpulse, contact, OwnerClientId);
+
+        if (_logCollisionImpulses)
+            Debug.Log($"[MeatballPhysics] Collision tick={tick} self={OwnerClientId} other={other.OwnerClientId} " +
+                      $"|impulse|={impulse:F2} approachSpeed={approachSpeed:F2}");
     }
 
+    private void RecordCollisionImpulse(ulong tick, Vector3 impulse, Vector3 contactPoint, ulong otherClientId)
+    {
+        _pendingCollisionImpulses.Add(new CollisionImpulse
+        {
+            tick = tick,
+            impulse = impulse,
+            contactPoint = contactPoint,
+            otherClientId = otherClientId,
+        });
+    }
+
+    /// <summary>
+    /// Called by MeatballNetSync each time it broadcasts a snapshot. Returns the pending
+    /// impulses accumulated since the last drain and clears the internal list.
+    /// </summary>
+    public CollisionImpulse[] DrainPendingCollisionImpulses()
+    {
+        if (_pendingCollisionImpulses.Count == 0) return System.Array.Empty<CollisionImpulse>();
+        var arr = _pendingCollisionImpulses.ToArray();
+        _pendingCollisionImpulses.Clear();
+        return arr;
+    }
 }

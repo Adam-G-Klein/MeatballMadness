@@ -1,6 +1,5 @@
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 /// <summary>
 /// Adds a hold-to-reel ability to a meatball player without modifying any existing scripts.
@@ -29,9 +28,6 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
     [Tooltip("Optional explicit Rigidbody reference. If left empty, uses MeatballPhysicsController.Rigidbody.")]
     [SerializeField] private Rigidbody playerRigidbody;
-
-    [Header("Input")]
-    [SerializeField] private Key reelKey = Key.E;
 
     [Header("Grounded Reel Restriction")]
     [Tooltip("Layers treated as ground for deciding whether this player is allowed to reel.")]
@@ -73,11 +69,8 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
     private MeatballPhysicsController _controller;
     private TetherForce _tether;
-    private bool _localHeldLastFrame;
-    private float _nextResendTime;
     private bool _audioWasPlaying;
 
-    private bool _serverRequestedReeling;
     private bool _serverIsReeling;
     private float _lastImpactSfxTime = -999f;
 
@@ -125,9 +118,6 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        _localHeldLastFrame = false;
-        _nextResendTime = 0f;
-        _serverRequestedReeling = false;
         _serverIsReeling = false;
         _lastImpactSfxTime = -999f;
 
@@ -142,33 +132,10 @@ public class SpaghettiReelAbility : NetworkBehaviour
 
         if (IsServer)
         {
-            _serverRequestedReeling = false;
             SetServerReelingState(false);
         }
 
         StopLoopAudioImmediate();
-    }
-
-    private void Update()
-    {
-        if (!IsOwner)
-            return;
-
-        if (Keyboard.current == null)
-            return;
-
-        bool held = Keyboard.current[reelKey].isPressed;
-
-        bool shouldSend =
-            held != _localHeldLastFrame ||
-            Time.unscaledTime >= _nextResendTime;
-
-        if (shouldSend)
-        {
-            SetReelingIntentServerRpc(held);
-            _localHeldLastFrame = held;
-            _nextResendTime = Time.unscaledTime + GetResendInterval();
-        }
     }
 
     private void FixedUpdate()
@@ -221,23 +188,17 @@ public class SpaghettiReelAbility : NetworkBehaviour
         PlayImpactSfxClientRpc();
     }
 
-    [ServerRpc]
-    private void SetReelingIntentServerRpc(bool isHeld)
-    {
-        _serverRequestedReeling = isHeld;
-        UpdateServerReelStateFromGrounding();
-
-        if (debugLogs)
-        {
-            Debug.Log($"[SpaghettiReelAbility] Client {OwnerClientId} requested reeling: {_serverRequestedReeling}, active: {_serverIsReeling}");
-        }
-    }
-
     private void UpdateServerReelStateFromGrounding()
     {
+        bool requested = _controller != null && _controller.ReelHeld;
         bool grounded = IsGroundedForReeling();
-        bool shouldBeReeling = _serverRequestedReeling && grounded;
+        bool shouldBeReeling = requested && grounded;
         SetServerReelingState(shouldBeReeling);
+
+        if (debugLogs && shouldBeReeling != _serverIsReeling)
+        {
+            Debug.Log($"[SpaghettiReelAbility] Client {OwnerClientId} reel state requested={requested} grounded={grounded} active={shouldBeReeling}");
+        }
     }
 
     private void SetServerReelingState(bool shouldBeReeling)
@@ -266,14 +227,6 @@ public class SpaghettiReelAbility : NetworkBehaviour
             QueryTriggerInteraction.Ignore);
 
         return hitCount > 0;
-    }
-
-    private float GetResendInterval()
-    {
-        if (reelSettings == null)
-            return 0.15f;
-
-        return Mathf.Max(0.05f, reelSettings.resendInterval);
     }
 
     private void ApplyReelForces(Rigidbody selfRb, Rigidbody partnerRb, TetherForce partnerTether)
