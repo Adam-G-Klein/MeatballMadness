@@ -18,9 +18,14 @@ public class MeatballChefController : MonoBehaviour
             Debug.LogWarning("[MeatballChefController] No chef prefab assigned.", this);
             return;
         }
-
-        _chefInstance = Instantiate(_chefPrefab, transform.position, Quaternion.identity);
-        _chefInstance.GetComponent<ChefAnimator>()?.SetFollowTarget(transform);
+        // Get the child named "MeatballVisual" and have the follow target be that
+        Transform visualChild = transform.Find("MeatballVisual");
+        if (visualChild != null)
+        {
+            // This will find the right visual target for following
+            _chefInstance = Instantiate(_chefPrefab, transform.position, Quaternion.identity);
+            _chefInstance.GetComponent<ChefAnimator>()?.Initialize(GetComponent<MeatballNetSync>(), GetComponent<MeatballClientInputHandler>(), visualChild);
+        }
     }
 
     void OnDestroy()

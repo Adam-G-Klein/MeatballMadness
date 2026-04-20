@@ -13,6 +13,7 @@ using UnityEngine;
 /// instantiate on server startup), or drop it into the always-loaded scene and
 /// let NetworkManager auto-spawn scene-placed NetworkObjects.
 /// </summary>
+[DefaultExecutionOrder(-200)]
 [RequireComponent(typeof(NetworkObject))]
 public class NetworkTick : NetworkBehaviour
 {
