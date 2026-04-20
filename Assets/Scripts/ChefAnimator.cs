@@ -118,11 +118,11 @@ public class ChefAnimator : MonoBehaviour
     }
 
     /// <summary>Called by MeatballChefController after spawning this prefab.</summary>
-    public void SetFollowTarget(Transform target)
+    public void Initialize(MeatballNetSync netSync, MeatballClientInputHandler inputHandler, Transform target)
     {
         _followTarget = target;
-        _netSync = target.GetComponent<MeatballNetSync>();
-        _inputHandler = target.GetComponent<MeatballClientInputHandler>();
+        _netSync = netSync;
+        _inputHandler = inputHandler;
 
         if (_netSync == null)
         {
