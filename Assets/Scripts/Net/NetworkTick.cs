@@ -26,6 +26,19 @@ public class NetworkTick : NetworkBehaviour
                              "reliably reach the host before it simulates the matching tick.")]
     private int _bufferTicks = 3;
 
+    [SerializeField, Tooltip("Ignore per-sync drift within +/- this many ticks. Prevents constant " +
+                             "one-tick churn when the client clock is already well aligned.")]
+    private int _deadbandTicks = 1;
+
+    [SerializeField, Tooltip("When drift is outside the deadband but smaller than the hard-snap " +
+                             "threshold, move the client clock this many ticks toward the target " +
+                             "per sync. Converges smoothly without re-keying input streams.")]
+    private int _nudgeTicksPerSync = 1;
+
+    [SerializeField, Tooltip("If per-sync drift is at or beyond this many ticks, stop nudging and " +
+                             "hard-snap instead. Signals a frame hitch, RTT spike, or lost syncs.")]
+    private int _hardSnapThresholdTicks = 8;
+
     [SerializeField, Tooltip("How often (seconds) both ends log their tick for verification.")]
     private float _logIntervalSeconds = 1f;
 
@@ -100,21 +113,52 @@ public class NetworkTick : NetworkBehaviour
     }
 
     [ClientRpc]
+    // every 25 ticks, align client ticks to prevent clock drift
     private void BroadcastTickClientRpc(ulong hostTick)
     {
         if (IsServer) return; // host already owns the canonical tick
 
         float rttSec = GetRttMs() / 1000f;
         float fdt = Time.fixedDeltaTime;
-        int rttTicks = Mathf.RoundToInt(rttSec / fdt);
+        int rttTicks = Mathf.RoundToInt(rttSec / fdt); // ticks that occurred during the round trip
 
+        ulong target = hostTick + (ulong)(rttTicks + _bufferTicks);
         ulong previous = _currentTick;
-        _currentTick = hostTick + (ulong)(rttTicks + _bufferTicks);
+        long targetDelta = (long)target - (long)previous;
+        long absDelta = targetDelta < 0 ? -targetDelta : targetDelta;
+
+        string action;
+        if (!_clientHasSynced)
+        {
+            _currentTick = target;
+            action = "INIT";
+        }
+        else if (absDelta <= _deadbandTicks)
+        {
+            action = "HOLD";
+        }
+        else if (absDelta >= _hardSnapThresholdTicks)
+        {
+            _currentTick = target;
+            action = "SNAP";
+            Debug.LogWarning($"[NetworkTick] Tick drift {targetDelta} exceeds hard-snap threshold " +
+                             $"{_hardSnapThresholdTicks}; snapping. Check RTT stability and frame pacing.");
+        }
+        else
+        {
+            int step = Mathf.Min(Mathf.Max(1, _nudgeTicksPerSync), (int)absDelta);
+            _currentTick = targetDelta > 0
+                ? previous + (ulong)step
+                : previous - (ulong)step;
+            action = targetDelta > 0 ? $"NUDGE+{step}" : $"NUDGE-{step}";
+        }
+
         _lastSyncedHostTick = hostTick;
         _clientHasSynced = true;
 
-        long delta = (long)_currentTick - (long)previous;
-        Debug.Log($"[NetworkTick] CLIENT sync: host={hostTick} rttTicks={rttTicks} buffer={_bufferTicks} -> local={_currentTick} (snap delta={delta})");
+        long applied = (long)_currentTick - (long)previous;
+        Debug.Log($"[NetworkTick] CLIENT sync: host={hostTick} rttTicks={rttTicks} buffer={_bufferTicks} " +
+                  $"target={target} -> local={_currentTick} (targetDelta={targetDelta}, applied={applied}, action={action})");
     }
 
     private float GetRttMs()
@@ -122,6 +166,6 @@ public class NetworkTick : NetworkBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null || nm.NetworkConfig == null || nm.NetworkConfig.NetworkTransport == null)
             return 0f;
-        return nm.NetworkConfig.NetworkTransport.GetCurrentRtt(nm.ServerClientId);
+        return nm.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId);
     }
 }
