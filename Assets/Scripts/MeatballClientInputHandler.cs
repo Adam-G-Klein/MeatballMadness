@@ -68,6 +68,41 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
 
     public bool SprintHeld => _sprintHeld;
 
+    /// <summary>
+    /// Returns the most recently pushed input frame, or a zeroed frame if no input has
+    /// been produced yet. Used by <see cref="PredictedMeatball"/> to feed MeatballMotor
+    /// each tick during owner-side prediction.
+    /// </summary>
+    public InputFrame LatestFrame
+    {
+        get
+        {
+            if (_historyCount == 0) return InputFrame.Zero(0);
+            int idx = (_historyHead - 1 + _history.Length) % _history.Length;
+            return _history[idx];
+        }
+    }
+
+    /// <summary>
+    /// Looks up the input frame that was produced on <paramref name="tick"/>. Returns
+    /// false if the frame has already aged out of the ring buffer. Used during
+    /// reconciliation to replay inputs from the authoritative tick forward.
+    /// </summary>
+    public bool TryGetFrame(ulong tick, out InputFrame frame)
+    {
+        for (int i = 0; i < _historyCount; i++)
+        {
+            int idx = (_historyHead - 1 - i + _history.Length) % _history.Length;
+            if (_history[idx].tick == tick)
+            {
+                frame = _history[idx];
+                return true;
+            }
+        }
+        frame = InputFrame.Zero(tick);
+        return false;
+    }
+
     private void Awake()
     {
         _controller = GetComponent<MeatballPhysicsController>();

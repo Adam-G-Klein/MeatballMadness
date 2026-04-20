@@ -102,6 +102,30 @@ public class SpaghettiRenderer : MonoBehaviour
         _partnerLines.Clear();
     }
 
+    /// <summary>
+    /// Zeros implicit velocity on every owned chain's interior nodes by setting
+    /// <c>previous = current</c>. Call this when an authoritative reconcile hard-snaps
+    /// the owning meatball — without it, the Verlet integrator interprets the teleport
+    /// as a large velocity impulse and the noodle whips violently for a few frames.
+    ///
+    /// Safe to call on any instance; if this renderer doesn't own a chain for a pair,
+    /// the matching renderer on the partner will own it and its own reset (triggered by
+    /// the same event) takes care of it.
+    /// </summary>
+    public void ResetChainVelocities()
+    {
+        // Chain is a struct but its `current`/`previous` fields are arrays — writing into
+        // those arrays via a local copy of the struct still mutates the shared array, so
+        // no write-back to the dictionary is needed.
+        foreach (var kv in _chains)
+        {
+            Chain chain = kv.Value;
+            if (chain.current == null || chain.previous == null) continue;
+            for (int i = 0; i < chain.current.Length; i++)
+                chain.previous[i] = chain.current[i];
+        }
+    }
+
     // ── Simulation ──────────────────────────────────────────────────────────
 
     private void LateUpdate()
