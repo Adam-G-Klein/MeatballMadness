@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
+
 /// <summary>
 /// Host-only physics controller. Receives input from MeatballClientInputHandler via ServerRpc
 /// and drives the Rigidbody with AddForce. Disabled on non-host clients — they receive
@@ -27,16 +28,6 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     [SerializeField] private MeatballMovementSettings _settings;
     [SerializeField] private MeatballBounceSettings _bounceSettings;
-
-    // ── Latency-simulation queue ──────────────────────────────────────────────
-    private struct InputPacket
-    {
-        public float DueTime; // Time.fixedTime when the packet should be consumed
-        public Vector2 Move;
-        public bool Jump;
-        public bool Sprint;
-    }
-    private readonly Queue<InputPacket> _inputQueue = new();
 
     // ── Pending state consumed by FixedUpdate ─────────────────────────────────
     private Vector2 _pendingMove;
@@ -103,54 +94,19 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     /// <summary>
     /// Called by MeatballClientInputHandler's ServerRpc. Runs on the host only.
-    /// When latency simulation is enabled the packet is queued and replayed after the
-    /// configured delay, modelling the round-trip felt by a non-host client.
+    /// Updates pending state immediately; FixedUpdate consumes it next tick.
     /// </summary>
     public void ReceiveInput(Vector2 move, bool jump, bool sprint)
     {
-#if UNITY_EDITOR
-        float delaySeconds = _settings.simulatedLatencyMs / 1000f;
-#else
-        float delaySeconds = 0f;
-#endif
-        if (delaySeconds <= 0f)
-        {
-            // No delay — update pending state immediately.
-            _pendingMove = move;
-            _pendingSprint = sprint;
-            if (jump) _pendingJump = true;
-            return;
-        }
-
-        _inputQueue.Enqueue(new InputPacket
-        {
-            DueTime = Time.fixedTime + delaySeconds,
-            Move = move,
-            Jump = jump,
-            Sprint = sprint,
-        });
+        _pendingMove = move;
+        _pendingSprint = sprint;
+        if (jump) _pendingJump = true;
     }
 
     private void FixedUpdate()
     {
-        DrainInputQueue();
         ApplyMovement();
         ApplyJump();
-    }
-
-    /// <summary>
-    /// Flushes all queued packets whose DueTime has arrived into the pending-state fields.
-    /// When simulatedLatencyMs is 0 the queue stays empty and this is a no-op.
-    /// </summary>
-    private void DrainInputQueue()
-    {
-        while (_inputQueue.Count > 0 && _inputQueue.Peek().DueTime <= Time.fixedTime)
-        {
-            InputPacket p = _inputQueue.Dequeue();
-            _pendingMove = p.Move;
-            _pendingSprint = p.Sprint;
-            if (p.Jump) _pendingJump = true;
-        }
     }
 
     private void ApplyMovement()
