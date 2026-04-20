@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Blocks.Sessions;
 using Blocks.Sessions.Common;
+using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -8,6 +9,8 @@ using UnityEngine.SceneManagement;
 public class MeatballMultiplayerSessionManager : MonoBehaviour
 {
     public static MeatballMultiplayerSessionManager Instance { get; private set; }
+    [SerializeField] 
+    private GameObject _networkTickPrefab;
 
     [SerializeField] SessionSettings sessionSettings;
     [SerializeField] QuickJoinSettings quickJoinSettings;
@@ -45,6 +48,8 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
         if (scene.name != "LukeScene") return;
         SceneManager.sceneLoaded -= OnLukeSceneLoaded;
         await CreateSessionAsync();
+        GameObject networkTick = Instantiate(_networkTickPrefab);
+        networkTick.GetComponent<NetworkObject>().Spawn(destroyWithScene: true);
     }
 
     public async Task<IHostSession> CreateSessionAsync()
