@@ -40,6 +40,7 @@ public class MeatballNetSync : NetworkBehaviour
 
     private Rigidbody _rb;
     private MeatballPhysicsController _controller;
+    private PredictedMeatball _predicted;
 
     // Host-side broadcast pacing.
     private int _ticksSinceLastSnapshot;
@@ -81,6 +82,7 @@ public class MeatballNetSync : NetworkBehaviour
     {
         _rb = GetComponent<Rigidbody>();
         _controller = GetComponent<MeatballPhysicsController>();
+        _predicted = GetComponent<PredictedMeatball>();
         RecomputeSnapshotInterval();
     }
 
@@ -101,13 +103,20 @@ public class MeatballNetSync : NetworkBehaviour
             _ticksSinceLastSnapshot = _ticksPerSnapshot; // broadcast immediately on first tick
             Debug.Log($"[MeatballNetSync] Host spawn (owner={OwnerClientId}) snapshotHz={_snapshotHz} ticksPerSnapshot={_ticksPerSnapshot}");
         }
+        else if (IsOwner)
+        {
+            // Owning client: keep Rigidbody dynamic — PredictedMeatball applies local input
+            // forces every tick and reconciles to incoming snapshots. We do NOT interpolate
+            // here; snapshots are forwarded to the predictor.
+            _rb.isKinematic = false;
+            Debug.Log($"[MeatballNetSync] Owner-client spawn (owner={OwnerClientId}, local={NetworkManager.LocalClientId}) — predicting locally.");
+        }
         else
         {
-            // Clients must not run their own physics simulation — kinematic means
-            // the engine ignores forces and we drive the body entirely via MovePosition/MoveRotation.
-            // (Rollout step 7 will branch on IsOwner && !IsServer so the owner predicts locally.)
+            // Remote-owner client: no local simulation. Drive the body toward the latest
+            // snapshot via MovePosition/MoveRotation every FixedUpdate.
             _rb.isKinematic = true;
-            Debug.Log($"[MeatballNetSync] Client spawn (owner={OwnerClientId}, local={NetworkManager.LocalClientId}) — kinematic.");
+            Debug.Log($"[MeatballNetSync] Remote-owner spawn (owner={OwnerClientId}, local={NetworkManager.LocalClientId}) — kinematic.");
         }
     }
 
@@ -121,7 +130,8 @@ public class MeatballNetSync : NetworkBehaviour
     private void FixedUpdate()
     {
         if (IsServer) HostBroadcast();
-        else          ClientInterpolate();
+        else if (!IsOwner) ClientInterpolate();
+        // Owning clients: PredictedMeatball runs its own FixedUpdate replay/step loop.
     }
 
     // -------------------------------------------------------------------------
@@ -175,6 +185,11 @@ public class MeatballNetSync : NetworkBehaviour
         if (_logSnapshots)
             Debug.Log($"[MeatballNetSync] CLIENT received tick={snapshot.tick} pos={snapshot.position} " +
                       $"collisions={snapshot.collisions?.Length ?? 0}");
+
+        // Owner path: hand off to the predictor for rollback + replay. Non-owner clients
+        // fall through to ClientInterpolate() in FixedUpdate.
+        if (IsOwner && _predicted != null)
+            _predicted.ReceiveSnapshot(snapshot);
     }
 
     // -------------------------------------------------------------------------
