@@ -1,16 +1,22 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 /// <summary>
 /// Simple in-game debugger that can be toggled on and off.
 /// Supports changing orbit camera sensitivity, toggling music,
 /// switching between fullscreen and windowed mode,
-/// and toggling whether the camera requires RMB to rotate.
+/// toggling RMB requirement,
+/// AND toggling all HUD/UI with T.
 /// </summary>
 public class MeatballDebugger : MonoBehaviour
 {
     [Header("Toggle")]
     [SerializeField] private Key toggleDebuggerKey = Key.Backquote;
+
+    [Header("Global UI Toggle")]
+    [SerializeField] private Key toggleUIKey = Key.T;
+    [SerializeField] private UIDocument controlsHUD; // <-- drag your UI Document here
 
     [Header("Camera")]
     [SerializeField] private MeatballOrbitCamera orbitCamera;
@@ -19,7 +25,6 @@ public class MeatballDebugger : MonoBehaviour
     [SerializeField] private float maxSensitivity = 600f;
 
     [Header("Music")]
-    [Tooltip("GameObject that contains the background music AudioSource.")]
     [SerializeField] private GameObject musicObject;
     [SerializeField] private AudioSource musicSource;
 
@@ -31,6 +36,7 @@ public class MeatballDebugger : MonoBehaviour
 
     private bool debuggerVisible;
     private bool musicEnabled = true;
+    private bool uiVisible = true; // NEW
 
     private void Awake()
     {
@@ -56,13 +62,30 @@ public class MeatballDebugger : MonoBehaviour
         if (Keyboard.current == null)
             return;
 
+        // EXISTING DEBUGGER TOGGLE
         if (Keyboard.current[toggleDebuggerKey].wasPressedThisFrame)
             debuggerVisible = !debuggerVisible;
+
+        // NEW GLOBAL UI TOGGLE (T)
+        if (Keyboard.current[toggleUIKey].wasPressedThisFrame)
+            ToggleUI();
 
         if (!debuggerVisible)
             return;
 
         HandleDebuggerInput();
+    }
+
+    private void ToggleUI()
+    {
+        uiVisible = !uiVisible;
+
+        // Toggle debugger visibility
+        debuggerVisible = uiVisible;
+
+        // Toggle UI Toolkit HUD
+        if (controlsHUD != null)
+            controlsHUD.enabled = uiVisible;
     }
 
     private void HandleDebuggerInput()
@@ -130,6 +153,9 @@ public class MeatballDebugger : MonoBehaviour
         GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"Toggle Debugger: {toggleDebuggerKey}");
         y += lineHeight;
 
+        GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"Toggle HUD (T): {toggleUIKey}");
+        y += lineHeight;
+
         if (orbitCamera != null)
         {
             GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"Look Sensitivity H: {orbitCamera.OrbitSpeedH:F1}");
@@ -138,26 +164,21 @@ public class MeatballDebugger : MonoBehaviour
             GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"Look Sensitivity V: {orbitCamera.OrbitSpeedV:F1}");
             y += lineHeight;
 
-            GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"[1] Lower Sensitivity by {sensitivityStep:F0}");
+            GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"[1] Lower Sensitivity");
             y += lineHeight;
 
-            GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"[2] Raise Sensitivity by {sensitivityStep:F0}");
+            GUI.Label(new Rect(30f, y, width - 30f, lineHeight), $"[2] Raise Sensitivity");
             y += lineHeight;
 
             GUI.Label(
                 new Rect(30f, y, width - 30f, lineHeight),
-                $"[R] Require RMB To Rotate: {(orbitCamera.RequireRightMouseButtonToRotate ? "ON" : "OFF")}"
+                $"[R] Require RMB: {(orbitCamera.RequireRightMouseButtonToRotate ? "ON" : "OFF")}"
             );
             y += lineHeight;
         }
-        else
-        {
-            GUI.Label(new Rect(30f, y, width - 30f, lineHeight), "Orbit camera not assigned/found.");
-            y += lineHeight * 3f;
-        }
 
         string musicText = musicSource == null
-            ? "Music source not assigned/found."
+            ? "Music source not found."
             : $"[M] Music: {(musicEnabled ? "ON" : "OFF")}";
 
         GUI.Label(new Rect(30f, y, width - 30f, lineHeight), musicText);
@@ -165,7 +186,7 @@ public class MeatballDebugger : MonoBehaviour
 
         GUI.Label(
             new Rect(30f, y, width - 30f, lineHeight),
-            $"[F] Display Mode: {(Screen.fullScreen ? "Fullscreen" : "Windowed")}"
+            $"[F] Display: {(Screen.fullScreen ? "Fullscreen" : "Windowed")}"
         );
     }
 }

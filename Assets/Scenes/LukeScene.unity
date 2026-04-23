@@ -2427,6 +2427,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeatballDebugger
   toggleDebuggerKey: 5
+  toggleUIKey: 34
+  controlsHUD: {fileID: 552266390}
   orbitCamera: {fileID: 308134695}
   sensitivityStep: 20
   minSensitivity: 20
