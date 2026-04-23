@@ -26,6 +26,10 @@ public class MeatballNetSync : NetworkBehaviour
     // Hard-snap to the authoritative position if further than this (e.g. after respawn).
     [SerializeField] private float snapDistance = 3f;
 
+    [Tooltip("Max ticks to project a stale snapshot's velocity forward. Prevents runaway " +
+             "drift when snapshots stop arriving. At 50 Hz, 6 ticks = 120 ms of forward projection.")]
+    [SerializeField] private int _maxExtrapolationTicks = 6;
+
     [Header("Snapshot Broadcast (host)")]
     [Tooltip("Target snapshot broadcast rate, in Hz. 30 Hz is plenty because owners predict " +
              "locally (step 7) and non-owners interpolate. Host rounds to the nearest " +
@@ -206,7 +210,17 @@ public class MeatballNetSync : NetworkBehaviour
 
     private void ReconcilePosition()
     {
-        Vector3 target = _latestSnapshot.position;
+        // Project the snapshot forward by (currentTick - snapshot.tick) to estimate where
+        // the host has the meatball RIGHT NOW — not where it was when the snapshot was
+        // captured. Without this, the ghost ball lags by snapshot period + RTT/2 and the
+        // owning client's predicted ball collides with air.
+        ulong currentTick = NetworkTick.Instance != null ? NetworkTick.Instance.Current : _latestSnapshot.tick;
+        long ticksAhead = (long)currentTick - (long)_latestSnapshot.tick;
+        if (ticksAhead < 0) ticksAhead = 0;
+        if (ticksAhead > _maxExtrapolationTicks) ticksAhead = _maxExtrapolationTicks;
+        float extrapolateSeconds = ticksAhead * Time.fixedDeltaTime;
+
+        Vector3 target = _latestSnapshot.position + _latestSnapshot.velocity * extrapolateSeconds;
         float dist = Vector3.Distance(_rb.position, target);
 
         if (dist > snapDistance)

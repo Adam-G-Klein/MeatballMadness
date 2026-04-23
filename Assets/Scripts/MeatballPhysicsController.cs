@@ -69,6 +69,7 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     public Rigidbody Rigidbody => _rb;
     public MeatballMovementSettings Settings => _settings;
+    public MeatballBounceSettings BounceSettings => _bounceSettings;
 
     private void Awake()
     {
@@ -275,18 +276,11 @@ public class MeatballPhysicsController : NetworkBehaviour
         // (from the lower instance ID) and apply the impulse to both ends here.
         if (GetInstanceID() >= other.GetInstanceID()) return;
 
-        Vector3 separation = _rb.position - other._rb.position;
-        if (separation.sqrMagnitude < 1e-6f) separation = Vector3.right;
-        Vector3 dir = separation.normalized;
-
-        float approachSpeed = Mathf.Max(0f, Vector3.Dot(other._rb.linearVelocity - _rb.linearVelocity, dir));
-
-        float impulse = Mathf.Min(
-            _bounceSettings.baseBounceImpulse + _bounceSettings.velocityScale * approachSpeed,
-            _bounceSettings.maxBounceImpulse);
-
-        Vector3 selfImpulse = dir * impulse;
-        Vector3 otherImpulse = -dir * impulse;
+        Vector3 selfImpulse = MeatballBounceResolver.Compute(
+            _rb.position, _rb.linearVelocity,
+            other._rb.position, other._rb.linearVelocity,
+            _bounceSettings);
+        Vector3 otherImpulse = -selfImpulse;
 
         _rb.AddForce(selfImpulse, ForceMode.Impulse);
         other._rb.AddForce(otherImpulse, ForceMode.Impulse);
@@ -299,7 +293,7 @@ public class MeatballPhysicsController : NetworkBehaviour
 
         if (_logCollisionImpulses)
             Debug.Log($"[MeatballPhysics] Collision tick={tick} self={OwnerClientId} other={other.OwnerClientId} " +
-                      $"|impulse|={impulse:F2} approachSpeed={approachSpeed:F2}");
+                      $"|impulse|={selfImpulse.magnitude:F2}");
     }
 
     private void RecordCollisionImpulse(ulong tick, Vector3 impulse, Vector3 contactPoint, ulong otherClientId)
