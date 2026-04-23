@@ -156,7 +156,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Radius: 0.67
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &2026459723430104527
 Rigidbody:
@@ -262,6 +262,7 @@ MonoBehaviour:
   positionSmoothing: 12
   rotationSmoothing: 12
   snapDistance: 6
+  _maxExtrapolationTicks: 6
   _snapshotHz: 30
   _logSnapshots: 1
   _logStaleSnapshots: 1
@@ -700,10 +701,17 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _historySize: 64
   _hardSnapDistance: 3
-  _smoothErrorThreshold: 0.02
+  _smoothErrorThreshold: 0.06
   _visualChildName: MeatballVisual
   _visualDecayRate: 20
   _collisionReplaySlowdown: 0.5
   _ignorePeerCollisions: 1
+  _logPredictedBounces: 1
   _logReconciles: 1
   _logPredictionSteps: 1
+  _drawPhysicsVsVisualGizmos: 1
+  _gizmoSphereRadius: 0.4
+  _physicsGizmoColor: {r: 0, g: 1, b: 0.3, a: 0.9}
+  _visualGizmoColor: {r: 1, g: 0.85, b: 0, a: 0.9}
+  _collisionTweenGizmoColor: {r: 1, g: 0.15, b: 0.15, a: 0.9}
+  _collisionTweenGizmoDuration: 0.6
