@@ -20,9 +20,12 @@ using UnityEngine;
 ///   4. Record the resulting Rigidbody state into a tick-keyed ring buffer so a future
 ///      snapshot can compare prediction vs. authority.
 ///
-/// In LateUpdate the visual offset decays to zero on a <c>MeatballVisual</c> child, which
-/// holds the mesh. Camera, tether, ground check, and collider all live on the root and
-/// read the authoritative Rigidbody transform.
+/// The mesh lives on a separate, unparented <c>MeatballVisual</c> GameObject spawned
+/// from a prefab reference. Each LateUpdate it is positioned at
+/// <c>transform.position + _visualOffset</c> (rotation = transform.rotation) so the
+/// visual can smoothly catch up to the physics body after a reconcile without being
+/// slaved to the parent's interpolated transform. Camera, tether, ground check, and
+/// collider all live on the root and read the authoritative Rigidbody transform.
 ///
 /// Rollout step 7 + step 8 from talk-me-through-what-rosy-pudding.md. Steps are fused
 /// because prediction without reconciliation would drift immediately.
@@ -50,11 +53,12 @@ public class PredictedMeatball : NetworkBehaviour
                              "the mesh steady when prediction is nearly perfect.")]
     private float _smoothErrorThreshold = 0.02f;
 
-    [Header("Visual smoothing (mesh child)")]
-    [SerializeField, Tooltip("Name of the child transform that holds the mesh. Receives a local-position " +
-                             "offset that decays to zero each LateUpdate; the root + collider + Rigidbody " +
-                             "stay at the authoritative position.")]
-    private string _visualChildName = "MeatballVisual";
+    [Header("Visual (separate GameObject)")]
+    [SerializeField, Tooltip("Prefab for the visual mesh. Instantiated unparented at spawn and " +
+                             "its world position/rotation is driven from this script every LateUpdate. " +
+                             "Keeping the visual outside the physics hierarchy is what lets the " +
+                             "post-reconcile offset smoothing run without fighting Rigidbody interpolation.")]
+    private GameObject _visualPrefab;
 
     [SerializeField, Tooltip("Higher = faster mesh catch-up (per-second exponential decay rate). 15-25 feels " +
                              "good at 60 fps; widen this for collision-replay frames (handled automatically).")]
@@ -82,7 +86,7 @@ public class PredictedMeatball : NetworkBehaviour
 
     [Header("Gizmos (client-only)")]
     [SerializeField, Tooltip("Draw a wire sphere at the Rigidbody (physics) position and another at the " +
-                             "MeatballVisual (mesh) position so the owner-side visual offset is visible " +
+                             "spawned visual's position so the owner-side visual offset is visible " +
                              "in Scene view. Drawn only on the owning client.")]
     private bool _drawPhysicsVsVisualGizmos = true;
 
@@ -121,10 +125,19 @@ public class PredictedMeatball : NetworkBehaviour
     private bool _hasPendingSnapshot;
     private MeatballSnapshot _pendingSnapshot;
 
-    // Current visual offset on the MeatballVisual child (decays to 0 in LateUpdate).
-    private Transform _visualChild;
+    // Current visual offset applied on top of the Rigidbody transform (decays to 0 in LateUpdate).
+    // The visual is a separate world-space GameObject — see _visualInstance.
+    private GameObject _visualInstance;
+    private Transform _visualTransform;
     private Vector3 _visualOffset;
     private bool _lastReconcileReplayedCollision;
+
+    /// <summary>
+    /// World-space visual GameObject spawned by this component. Other scripts that
+    /// need a "where the mesh appears" reference (e.g. chef follower) should read this
+    /// instead of looking up a child, since the visual is deliberately unparented.
+    /// </summary>
+    public Transform VisualTransform => _visualTransform;
 
     // Peer colliders for which we have already called Physics.IgnoreCollision.
     private readonly HashSet<Collider> _ignoredPeerColliders = new();
@@ -149,25 +162,27 @@ public class PredictedMeatball : NetworkBehaviour
         _settings = _controller.Settings;
         _bounceSettings = _controller.BounceSettings;
         _predicted = new PredictedState[Mathf.Max(8, _historySize)];
-        _visualChild = transform.Find(_visualChildName);
         _selfCollider = GetComponent<Collider>();
-        enabled = false; // wait for OnNetworkSpawn to decide
+
+        if (_visualPrefab != null)
+        {
+            _visualInstance = Instantiate(_visualPrefab, transform.position, transform.rotation);
+            _visualTransform = _visualInstance.transform;
+            _visualTransform.localScale = Vector3.one * 2f;
+        }
+        else
+        {
+            Debug.LogWarning("[PredictedMeatball] No visual prefab assigned — mesh will not appear.", this);
+        }
     }
 
     public override void OnNetworkSpawn()
     {
-        // Host owns its own meatball but runs the authoritative controller already.
-        // Remote-owner clients don't simulate — they interpolate via MeatballNetSync.
-        if (!IsOwner || IsServer)
-        {
-            enabled = false;
-            return;
-        }
+        // Prediction-only: host owns its own meatball via MeatballPhysicsController and
+        // remote-owner clients interpolate via MeatballNetSync. Only the owning client
+        // needs the rollback/replay machinery and the manual physics stepping.
+        if (!IsOwner || IsServer) return;
 
-        enabled = true;
-
-        // Take manual control of physics stepping so rollback replay uses the exact same
-        // integration as the live tick. Restored on despawn.
         _prevSimulationMode = Physics.simulationMode;
         Physics.simulationMode = SimulationMode.Script;
         _simulationModeOverridden = true;
@@ -183,6 +198,11 @@ public class PredictedMeatball : NetworkBehaviour
             Physics.simulationMode = _prevSimulationMode;
             _simulationModeOverridden = false;
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (_visualInstance != null) Destroy(_visualInstance);
     }
 
     /// <summary>
@@ -396,27 +416,36 @@ public class PredictedMeatball : NetworkBehaviour
         }
     }
 
-    // ── Visual smoothing (mesh child) ──────────────────────────────────────
+    // ── Visual positioning (world-space, unparented) ───────────────────────
 
     private void LateUpdate()
     {
-        if (!IsOwner || IsServer) return;
-        if (_visualChild == null) return;
+        if (_visualTransform == null) return;
 
-        float decay = _visualDecayRate;
-        if (_lastReconcileReplayedCollision) decay *= _collisionReplaySlowdown;
-
-        // Exponential decay toward zero with frame-independent rate.
-        float k = 1f - Mathf.Exp(-decay * Time.deltaTime);
-        _visualOffset = Vector3.Lerp(_visualOffset, Vector3.zero, k);
-
-        if (_visualOffset.sqrMagnitude < 1e-8f)
+        // Only the predicting owner accumulates a reconcile offset. Host and remote-owner
+        // clients leave _visualOffset at zero so the visual tracks the Rigidbody exactly.
+        if (IsOwner && !IsServer)
         {
-            _visualOffset = Vector3.zero;
-            _lastReconcileReplayedCollision = false;
+            float decay = _visualDecayRate;
+            if (_lastReconcileReplayedCollision) decay *= _collisionReplaySlowdown;
+
+            // Exponential decay toward zero with frame-independent rate.
+            float k = 1f - Mathf.Exp(-decay * Time.deltaTime);
+            _visualOffset = Vector3.Lerp(_visualOffset, Vector3.zero, k);
+
+            if (_visualOffset.sqrMagnitude < 1e-8f)
+            {
+                _visualOffset = Vector3.zero;
+                _lastReconcileReplayedCollision = false;
+            }
         }
 
-        _visualChild.localPosition = _visualOffset;
+        // Read from transform.position rather than _rb.position so host and remote-owner
+        // paths (where Rigidbody.interpolation smooths the transform between fixed steps)
+        // produce a visually smooth result. On the owning client, simulationMode=Script
+        // means transform.position == rb.position anyway.
+        Transform t = transform;
+        _visualTransform.SetPositionAndRotation(t.position + _visualOffset, t.rotation);
     }
 
     // ── Gizmos (owning client only) ────────────────────────────────────────
@@ -437,9 +466,9 @@ public class PredictedMeatball : NetworkBehaviour
 
         // Visual mesh position. With no offset this overlaps the physics sphere; during
         // post-reconcile smoothing the two diverge until the offset decays to zero.
-        if (_visualChild != null)
+        if (_visualTransform != null)
         {
-            Vector3 visualPos = _visualChild.position;
+            Vector3 visualPos = _visualTransform.position;
             Gizmos.color = _visualGizmoColor;
             Gizmos.DrawWireSphere(visualPos, _gizmoSphereRadius * 0.9f);
             Gizmos.DrawLine(_rb.position, visualPos);

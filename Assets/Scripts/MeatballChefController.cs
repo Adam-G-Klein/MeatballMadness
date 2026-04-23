@@ -18,14 +18,24 @@ public class MeatballChefController : MonoBehaviour
             Debug.LogWarning("[MeatballChefController] No chef prefab assigned.", this);
             return;
         }
-        // Get the child named "MeatballVisual" and have the follow target be that
-        Transform visualChild = transform.Find("MeatballVisual");
-        if (visualChild != null)
+
+        // Follow the unparented MeatballVisual spawned by PredictedMeatball so the chef
+        // rides the smoothed visual (which catches up after reconciles) rather than the
+        // raw Rigidbody transform.
+        PredictedMeatball predicted = GetComponent<PredictedMeatball>();
+        Transform followTarget = predicted != null ? predicted.VisualTransform : null;
+        if (followTarget == null)
         {
-            // This will find the right visual target for following
-            _chefInstance = Instantiate(_chefPrefab, transform.position, Quaternion.identity);
-            _chefInstance.GetComponent<ChefAnimator>()?.Initialize(GetComponent<MeatballNetSync>(), GetComponent<MeatballClientInputHandler>(), visualChild);
+            Debug.LogWarning("[MeatballChefController] No PredictedMeatball.VisualTransform available — " +
+                             "ensure PredictedMeatball has a visual prefab assigned.", this);
+            return;
         }
+
+        _chefInstance = Instantiate(_chefPrefab, transform.position, Quaternion.identity);
+        _chefInstance.GetComponent<ChefAnimator>()?.Initialize(
+            GetComponent<MeatballNetSync>(),
+            GetComponent<MeatballClientInputHandler>(),
+            followTarget);
     }
 
     void OnDestroy()
