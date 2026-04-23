@@ -66,14 +66,34 @@ public class PredictedMeatball : NetworkBehaviour
     private float _collisionReplaySlowdown = 0.5f;
 
     [Header("Peer collision")]
-    [SerializeField, Tooltip("Ignore local collisions between this meatball's collider and every other " +
-                             "meatball collider. Prevents the owner from double-resolving bounces: the " +
-                             "authoritative impulse arrives through the snapshot sidecar instead.")]
-    private bool _ignorePeerCollisions = true;
+    [SerializeField, Tooltip("When true, locally disables every meatball-vs-meatball collision on this " +
+                             "client so the predicted ball never detects peer contacts — bounces only " +
+                             "arrive via the authoritative snapshot. When false (default), the owning " +
+                             "client speculatively resolves peer bounces with the same math as the host " +
+                             "using MeatballBounceResolver; reconciliation corrects residual error.")]
+    private bool _ignorePeerCollisions = false;
+
+    [SerializeField, Tooltip("Log a line whenever the client speculatively applies a bounce impulse.")]
+    private bool _logPredictedBounces;
 
     [Header("Logging")]
     [SerializeField] private bool _logReconciles;
     [SerializeField] private bool _logPredictionSteps;
+
+    [Header("Gizmos (client-only)")]
+    [SerializeField, Tooltip("Draw a wire sphere at the Rigidbody (physics) position and another at the " +
+                             "MeatballVisual (mesh) position so the owner-side visual offset is visible " +
+                             "in Scene view. Drawn only on the owning client.")]
+    private bool _drawPhysicsVsVisualGizmos = true;
+
+    [SerializeField] private float _gizmoSphereRadius = 0.4f;
+    [SerializeField] private Color _physicsGizmoColor = new Color(0f, 1f, 0.3f, 0.9f);
+    [SerializeField] private Color _visualGizmoColor = new Color(1f, 0.85f, 0f, 0.9f);
+    [SerializeField] private Color _collisionTweenGizmoColor = new Color(1f, 0.15f, 0.15f, 0.9f);
+
+    [SerializeField, Tooltip("Seconds the red 'collision tween kickoff' marker stays visible after a " +
+                             "collision-bearing snapshot triggers a visual offset.")]
+    private float _collisionTweenGizmoDuration = 0.6f;
 
     // ── Ring buffer of predicted states ────────────────────────────────────
     private struct PredictedState
@@ -91,7 +111,9 @@ public class PredictedMeatball : NetworkBehaviour
 
     private Rigidbody _rb;
     private MeatballClientInputHandler _input;
+    private MeatballPhysicsController _controller;
     private MeatballMovementSettings _settings;
+    private MeatballBounceSettings _bounceSettings;
 
     private static readonly Collider[] _groundHits = new Collider[8];
 
@@ -108,6 +130,13 @@ public class PredictedMeatball : NetworkBehaviour
     private readonly HashSet<Collider> _ignoredPeerColliders = new();
     private Collider _selfCollider;
 
+    // Most recent location where ProcessReconcile applied a visual offset because the
+    // incoming snapshot carried a collision impulse for its tick. Used purely for the
+    // gizmo that marks where the visual "tween" was kicked off. Negative time = never.
+    private Vector3 _lastCollisionTweenPos;
+    private float _lastCollisionTweenTime = -1f;
+    private float _lastCollisionTweenError;
+
     // Remembers whether we toggled global simulation mode so despawn can restore it.
     private SimulationMode _prevSimulationMode;
     private bool _simulationModeOverridden;
@@ -116,7 +145,9 @@ public class PredictedMeatball : NetworkBehaviour
     {
         _rb = GetComponent<Rigidbody>();
         _input = GetComponent<MeatballClientInputHandler>();
-        _settings = GetComponent<MeatballPhysicsController>().Settings;
+        _controller = GetComponent<MeatballPhysicsController>();
+        _settings = _controller.Settings;
+        _bounceSettings = _controller.BounceSettings;
         _predicted = new PredictedState[Mathf.Max(8, _historySize)];
         _visualChild = transform.Find(_visualChildName);
         _selfCollider = GetComponent<Collider>();
@@ -281,15 +312,18 @@ public class PredictedMeatball : NetworkBehaviour
 
         bool replayedCollision = false;
 
-        // Apply any collision impulses stamped with T_auth itself. The motor hasn't run yet
-        // for this tick on the replay side because input was already applied by the host.
+        // Collision impulses stamped with T_auth are already integrated into snap.velocity
+        // (the host records rb.linearVelocity AFTER Physics.Simulate for the tick). Applying
+        // them again would double-count. We treat the sidecar purely as an event signal here
+        // so the visual smoothing slows down for a few frames; the impulse itself is already
+        // in the authoritative velocity we just wrote to the rigidbody.
         if (snap.collisions != null)
         {
             for (int i = 0; i < snap.collisions.Length; i++)
             {
                 if (snap.collisions[i].tick != snap.tick) continue;
-                _rb.AddForce(snap.collisions[i].impulse, ForceMode.Impulse);
                 replayedCollision = true;
+                break;
             }
         }
 
@@ -316,6 +350,19 @@ public class PredictedMeatball : NetworkBehaviour
             _visualOffset += delta;
 
         _lastReconcileReplayedCollision = replayedCollision;
+
+        // ── Visual "tween" kickoff marker ──────────────────────────────────
+        // When the snapshot carried a collision impulse for its tick AND the reconcile
+        // produced a visible offset (posError above smoothing threshold), the mesh begins
+        // its slowed exponential decay back to the physics body — that's the "tween" the
+        // gizmo highlights. Recorded at the post-replay Rigidbody position (where physics
+        // landed) so the marker pins to where the bounce was authoritatively resolved.
+        if (replayedCollision && posError > _smoothErrorThreshold)
+        {
+            _lastCollisionTweenPos = postReplayRbPos;
+            _lastCollisionTweenTime = Time.time;
+            _lastCollisionTweenError = posError;
+        }
 
         if (_logReconciles)
             Debug.Log($"[PredictedMeatball] reconcile tick={snap.tick} err={posError:F3} replay " +
@@ -372,6 +419,50 @@ public class PredictedMeatball : NetworkBehaviour
         _visualChild.localPosition = _visualOffset;
     }
 
+    // ── Gizmos (owning client only) ────────────────────────────────────────
+
+    private void OnDrawGizmos()
+    {
+        if (!_drawPhysicsVsVisualGizmos) return;
+        if (!Application.isPlaying) return;
+        // OnDrawGizmos still fires when the component is disabled; gate explicitly so the
+        // host and remote-owner clients (where this script is disabled in OnNetworkSpawn)
+        // don't draw anything. Predicted-physics state only exists on the owning client.
+        if (!IsSpawned || !IsOwner || IsServer) return;
+        if (_rb == null) return;
+
+        // Physics body (true authoritative-ish position the rest of the simulation reads).
+        Gizmos.color = _physicsGizmoColor;
+        Gizmos.DrawWireSphere(_rb.position, _gizmoSphereRadius);
+
+        // Visual mesh position. With no offset this overlaps the physics sphere; during
+        // post-reconcile smoothing the two diverge until the offset decays to zero.
+        if (_visualChild != null)
+        {
+            Vector3 visualPos = _visualChild.position;
+            Gizmos.color = _visualGizmoColor;
+            Gizmos.DrawWireSphere(visualPos, _gizmoSphereRadius * 0.9f);
+            Gizmos.DrawLine(_rb.position, visualPos);
+        }
+
+        // Recent collision-broadcast tween kickoff: marks where ProcessReconcile observed
+        // a snapshot with a collision impulse and seeded the visual offset.
+        if (_lastCollisionTweenTime >= 0f)
+        {
+            float age = Time.time - _lastCollisionTweenTime;
+            if (age <= _collisionTweenGizmoDuration)
+            {
+                float t = 1f - (age / _collisionTweenGizmoDuration); // 1 → 0
+                Color c = _collisionTweenGizmoColor;
+                c.a *= t;
+                Gizmos.color = c;
+                float r = _gizmoSphereRadius * (1f + (1f - t) * 0.75f); // expands as it fades
+                Gizmos.DrawWireSphere(_lastCollisionTweenPos, r);
+                Gizmos.DrawLine(_lastCollisionTweenPos, _lastCollisionTweenPos + Vector3.up * (1f + _lastCollisionTweenError));
+            }
+        }
+    }
+
     // ── Peer collision ignore ──────────────────────────────────────────────
 
     private void RefreshPeerCollisionIgnores()
@@ -389,5 +480,48 @@ public class PredictedMeatball : NetworkBehaviour
             Physics.IgnoreCollision(_selfCollider, otherCollider, true);
             _ignoredPeerColliders.Add(otherCollider);
         }
+    }
+
+    // ── Speculative client-side peer bounce ────────────────────────────────
+
+    /// <summary>
+    /// Fires on the owning client only (this component is disabled on host and remote-owner
+    /// clients via OnNetworkSpawn). When our predicted meatball contacts another meatball's
+    /// ghost, compute the same impulse the host would compute using <see cref="MeatballBounceResolver"/>
+    /// and apply it locally so the player sees an immediate bounce instead of visibly tunneling
+    /// through for ~RTT before the authoritative impulse arrives via snapshot.
+    ///
+    /// The ghost is kinematic and host-authoritative — we never touch it. Reconciliation on
+    /// the next snapshot absorbs residual error between our predicted impulse and the host's.
+    /// </summary>
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!IsOwner || IsServer) return;
+        if (_ignorePeerCollisions) return;
+        if (_bounceSettings == null) return;
+        if (collision.rigidbody == null) return;
+
+        // Only bounce off other meatballs. Floor / ramp / static geometry: let PhysX handle
+        // normally via the PhysicsMaterial.
+        if (!collision.rigidbody.TryGetComponent(out MeatballPhysicsController otherController)) return;
+
+        Rigidbody otherRb = collision.rigidbody;
+        // Ghost peers are kinematic, so their Rigidbody.linearVelocity is not maintained.
+        // Read the authoritative velocity from the last received snapshot instead — it's
+        // what the host actually used when computing its own bounce.
+        Vector3 otherVel = otherRb.linearVelocity;
+        if (otherRb.isKinematic && otherController.TryGetComponent(out MeatballNetSync otherSync))
+            otherVel = otherSync.NetworkedVelocity;
+
+        Vector3 impulse = MeatballBounceResolver.Compute(
+            _rb.position, _rb.linearVelocity,
+            otherRb.position, otherVel,
+            _bounceSettings);
+
+        _rb.AddForce(impulse, ForceMode.Impulse);
+
+        if (_logPredictedBounces)
+            Debug.Log($"[PredictedMeatball] speculative bounce vs owner={otherController.OwnerClientId} " +
+                      $"|impulse|={impulse.magnitude:F2} tick={(NetworkTick.Instance != null ? NetworkTick.Instance.Current : 0)}");
     }
 }
