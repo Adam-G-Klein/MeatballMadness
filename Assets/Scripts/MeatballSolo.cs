@@ -185,6 +185,8 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         _rawSprintHeld = context.ReadValue<float>() == 1f;
     }
 
+    public void OnReel(InputAction.CallbackContext context) { }
+
     // ── Ground Check ──────────────────────────────────────────────────────────
 
     bool CheckGround()

@@ -191,6 +191,10 @@ public class SpaghettiReelAbility : NetworkBehaviour
     private void UpdateServerReelStateFromGrounding()
     {
         bool requested = _controller != null && _controller.ReelHeld;
+        if(requested)
+        {
+            Debug.Log("ReelHeld: " + requested);
+        }
         bool grounded = IsGroundedForReeling();
         bool shouldBeReeling = requested && grounded;
         SetServerReelingState(shouldBeReeling);

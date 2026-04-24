@@ -152,7 +152,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _redundancy: 4
   _historySize: 64
-  _reelKey: 19
   _logInputDispatch: 1
   _logInputReceipt: 1
 --- !u!114 &3367403616109244128
@@ -341,9 +340,9 @@ MonoBehaviour:
   playerRigidbody: {fileID: 0}
   reelGroundMask:
     serializedVersion: 2
-    m_Bits: 64
-  reelGroundCheckRadius: 0.6
-  reelGroundCheckDownOffset: 0.5
+    m_Bits: 119
+  reelGroundCheckRadius: 0.97
+  reelGroundCheckDownOffset: 0.56
   reelLoopAudioSource: {fileID: -7091935692094853703}
   reelLoopClip: {fileID: 8300000, guid: 9f4dcd2d6b24e4bf59aff349614fce58, type: 3}
   reelLoopVolume: 0.1
@@ -609,8 +608,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PredictedMeatball
   ShowTopMostFoldoutHeaderGroup: 1
   _historySize: 64
-  _hardSnapDistance: 3
-  _smoothErrorThreshold: 0.06
+  _hardSnapDistance: 9
+  _smoothErrorThreshold: 0.1
   _visualPrefab: {fileID: 6603269636465029323, guid: b685edd34021d4541ae7113f2470c0c4, type: 3}
   _visualDecayRate: 20
   _collisionReplaySlowdown: 0.5

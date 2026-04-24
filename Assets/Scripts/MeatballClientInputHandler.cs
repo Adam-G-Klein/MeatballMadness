@@ -4,9 +4,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Owner-side input pipeline. Each FixedUpdate this component:
-///   1. Reads local input (move/jump/sprint via InputSystem callbacks; reel via direct
-///      Keyboard polling — the Reel action isn't in the .inputactions asset yet, so we
-///      keep the existing polling approach used by SpaghettiReelAbility).
+///   1. Reads local input (move/jump/sprint/reel via InputSystem callbacks).
 ///   2. Tags the frame with the current <see cref="NetworkTick.Current"/> and appends it
 ///      to a ring buffer of recent frames.
 ///   3. Sends the last N frames via <see cref="SubmitInputsServerRpc"/>. Redundancy means
@@ -28,9 +26,6 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
              "a second of FixedUpdate ticks so reconciliation (rollout step 8) can replay.")]
     [SerializeField] private int _historySize = 64;
 
-    [Tooltip("Key polled each FixedUpdate for the reel (pull-partner) input.")]
-    [SerializeField] private Key _reelKey = Key.E;
-
     [Tooltip("Log every SubmitInputsServerRpc call with the tick range it carries.")]
     [SerializeField] private bool _logInputDispatch;
 
@@ -44,6 +39,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     private Vector2 _rawMove;
     private bool _jumpLatched;
     private bool _sprintHeld;
+    private bool _reelHeld;
 
     // Tagged ring buffer of recent owner inputs. Preserved for reconciliation replay (step 8).
     private InputFrame[] _history;
@@ -141,28 +137,17 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         bool jump = _jumpLatched;
         _jumpLatched = false;
 
-        bool reel = PollReelKey();
-
         var frame = new InputFrame
         {
             tick = tick,
             move = worldMove,
             jump = jump,
             sprint = _sprintHeld,
-            reel = reel,
+            reel = _reelHeld,
         };
 
         PushHistory(frame);
         SendRedundantInputs();
-    }
-
-    private bool PollReelKey()
-    {
-        // Reel isn't in the InputSystem asset yet; poll the keyboard directly the same
-        // way SpaghettiReelAbility has historically. Gamepad support can follow once the
-        // action is added to the .inputactions asset.
-        if (Keyboard.current == null) return false;
-        return Keyboard.current[_reelKey].isPressed;
     }
 
     private void PushHistory(InputFrame frame)
@@ -270,6 +255,11 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     public void OnToggleLooking(InputAction.CallbackContext context) { }
 
     public void OnMenu(InputAction.CallbackContext context) { }
+
+    public void OnReel(InputAction.CallbackContext context)
+    {
+        _reelHeld = context.ReadValueAsButton();
+    }
 
     #endregion
 }
