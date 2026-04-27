@@ -2430,8 +2430,8 @@ MonoBehaviour:
   toggleUIKey: 34
   controlsHUD: {fileID: 552266390}
   orbitCamera: {fileID: 308134695}
-  sensitivityStep: 20
-  minSensitivity: 20
+  sensitivityStep: 10
+  minSensitivity: 5
   maxSensitivity: 600
   musicObject: {fileID: 987475004}
   musicSource: {fileID: 987475005}
