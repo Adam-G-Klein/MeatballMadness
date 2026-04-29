@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py --version)",
+      "Bash(python compute_ik_positions.py)",
+      "Bash(pip install *)",
+      "Bash(python compute_finger_ik.py)",
+      "Bash(python Tools/compute_ik_positions.py)"
+    ]
+  }
+}
