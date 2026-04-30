@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -130,18 +131,23 @@ public class ChefAnimator : MonoBehaviour
             return;
         }
 
-        // If the host already assigned a skin index before we subscribed, apply it immediately.
-        // Otherwise wait for the ClientRpc to arrive.
-        if (_netSync.SkinIndex >= 0)
-            ApplySkin(_netSync.SkinIndex);
+        ulong ownerClientId = netSync.OwnerClientId;
+        if (PlayerSkinAssignment.Instance != null && PlayerSkinAssignment.Instance.HasSkinIndex(ownerClientId))
+            ApplySkin(PlayerSkinAssignment.Instance.GetSkinIndex(ownerClientId));
         else
-            _netSync.OnSkinIndexAssigned += ApplySkin;
+            StartCoroutine(WaitAndApplySkin(ownerClientId));
     }
 
-    void ApplySkin(int index)
+    private IEnumerator WaitAndApplySkin(ulong ownerClientId)
     {
-        _netSync.OnSkinIndexAssigned -= ApplySkin;
+        yield return new WaitUntil(() =>
+            PlayerSkinAssignment.Instance != null &&
+            PlayerSkinAssignment.Instance.HasSkinIndex(ownerClientId));
+        ApplySkin(PlayerSkinAssignment.Instance.GetSkinIndex(ownerClientId));
+    }
 
+    private void ApplySkin(int index)
+    {
         if (_skinRoot == null) return;
 
         ApplyMesh(_skinRoot, _hatObjectName, _hatMeshes, index);

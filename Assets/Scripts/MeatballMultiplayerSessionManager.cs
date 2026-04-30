@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Threading.Tasks;
 using Blocks.Sessions;
 using Blocks.Sessions.Common;
@@ -9,8 +10,11 @@ using UnityEngine.SceneManagement;
 public class MeatballMultiplayerSessionManager : MonoBehaviour
 {
     public static MeatballMultiplayerSessionManager Instance { get; private set; }
-    [SerializeField] 
+    [SerializeField]
     private GameObject _networkTickPrefab;
+
+    [SerializeField]
+    private GameObject _playerSkinAssignmentPrefab;
 
     [SerializeField] SessionSettings sessionSettings;
     [SerializeField] QuickJoinSettings quickJoinSettings;
@@ -28,6 +32,10 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    void Start()
+    {
+
+    }
     void OnDestroy()
     {
         if (Instance == this)
@@ -48,6 +56,17 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
         if (scene.name != "LukeScene") return;
         SceneManager.sceneLoaded -= OnLukeSceneLoaded;
         await CreateSessionAsync();
+
+        var skinObj = Instantiate(_playerSkinAssignmentPrefab);
+        skinObj.GetComponent<NetworkObject>().Spawn();
+
+        StartCoroutine(HostPostInitCoroutine());
+    }
+
+    private IEnumerator HostPostInitCoroutine()
+    {
+        yield return PlayerSkinAssignment.Instance.Initialize();
+
         GameObject networkTick = Instantiate(_networkTickPrefab);
         networkTick.GetComponent<NetworkObject>().Spawn(destroyWithScene: true);
     }
@@ -77,5 +96,13 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
             : new SessionOptions();
 
         _ = await MultiplayerService.Instance.MatchmakeSessionAsync(quickJoinOptions, sessionOptions);
+
+        StartCoroutine(ClientPostJoinCoroutine());
+    }
+
+    private IEnumerator ClientPostJoinCoroutine()
+    {
+        yield return new WaitUntil(() => PlayerSkinAssignment.Instance != null);
+        yield return PlayerSkinAssignment.Instance.Initialize();
     }
 }

@@ -54,15 +54,6 @@ public class MeatballNetSync : NetworkBehaviour
     private bool _hasSnapshot;
     private MeatballSnapshot _latestSnapshot;
 
-    // -------------------------------------------------------------------------
-    // Skin index assignment
-    // -------------------------------------------------------------------------
-
-    static int _nextSkinIndex;
-
-    public event Action<int> OnSkinIndexAssigned;
-    public int SkinIndex { get; private set; } = -1;
-
     /// <summary>
     /// Latest collision impulses applied to this meatball by the host during the last
     /// broadcast tick. Currently unused on clients — wired up in rollout step 8.
@@ -103,7 +94,6 @@ public class MeatballNetSync : NetworkBehaviour
     {
         if (IsServer)
         {
-            AssignSkinIndexClientRpc(_nextSkinIndex++);
             _ticksSinceLastSnapshot = _ticksPerSnapshot; // broadcast immediately on first tick
             Debug.Log($"[MeatballNetSync] Host spawn (owner={OwnerClientId}) snapshotHz={_snapshotHz} ticksPerSnapshot={_ticksPerSnapshot}");
         }
@@ -122,13 +112,6 @@ public class MeatballNetSync : NetworkBehaviour
             _rb.isKinematic = true;
             Debug.Log($"[MeatballNetSync] Remote-owner spawn (owner={OwnerClientId}, local={NetworkManager.LocalClientId}) — kinematic.");
         }
-    }
-
-    [ClientRpc]
-    void AssignSkinIndexClientRpc(int index)
-    {
-        SkinIndex = index;
-        OnSkinIndexAssigned?.Invoke(index);
     }
 
     private void FixedUpdate()
