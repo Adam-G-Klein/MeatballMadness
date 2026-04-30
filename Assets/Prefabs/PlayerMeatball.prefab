@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: -2746169110752537434}
   - component: {fileID: 4196158280075945394}
   - component: {fileID: 5569993384176164118}
+  - component: {fileID: 5982867401159956651}
   m_Layer: 7
   m_Name: PlayerMeatball
   m_TagString: Player
@@ -152,8 +153,8 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _redundancy: 4
   _historySize: 64
-  _logInputDispatch: 1
-  _logInputReceipt: 1
+  _logInputDispatch: 0
+  _logInputReceipt: 0
 --- !u!114 &3367403616109244128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -172,7 +173,7 @@ MonoBehaviour:
   snapDistance: 6
   _maxExtrapolationTicks: 6
   _snapshotHz: 30
-  _logSnapshots: 1
+  _logSnapshots: 0
   _logStaleSnapshots: 1
 --- !u!114 &1845387534074825289
 MonoBehaviour:
@@ -616,10 +617,23 @@ MonoBehaviour:
   _ignorePeerCollisions: 1
   _logPredictedBounces: 1
   _logReconciles: 1
-  _logPredictionSteps: 1
+  _logPredictionSteps: 0
   _drawPhysicsVsVisualGizmos: 1
   _gizmoSphereRadius: 0.4
   _physicsGizmoColor: {r: 0, g: 1, b: 0.3, a: 0.9}
   _visualGizmoColor: {r: 1, g: 0.85, b: 0, a: 0.9}
   _collisionTweenGizmoColor: {r: 1, g: 0.15, b: 0.15, a: 0.9}
   _collisionTweenGizmoDuration: 0.6
+--- !u!114 &5982867401159956651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3141278423515096476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 161d69f170c301242907928079842bfc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerNameDisplayController
+  _nameDisplayPrefab: {fileID: 3863862906927232093, guid: 1cde1f86649f4dc4ba7d5ea9f66c048a, type: 3}

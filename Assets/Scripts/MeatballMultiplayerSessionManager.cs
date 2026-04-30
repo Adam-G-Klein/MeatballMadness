@@ -16,6 +16,8 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
     [SerializeField]
     private GameObject _playerSkinAssignmentPrefab;
 
+    [SerializeField]
+    private GameObject _playerNameAssignmentPrefab;
     [SerializeField] SessionSettings sessionSettings;
     [SerializeField] QuickJoinSettings quickJoinSettings;
 
@@ -60,12 +62,16 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
         var skinObj = Instantiate(_playerSkinAssignmentPrefab);
         skinObj.GetComponent<NetworkObject>().Spawn();
 
+        var nameObj = Instantiate(_playerNameAssignmentPrefab);
+        nameObj.GetComponent<NetworkObject>().Spawn();
+
         StartCoroutine(HostPostInitCoroutine());
     }
 
     private IEnumerator HostPostInitCoroutine()
     {
         yield return PlayerSkinAssignment.Instance.Initialize();
+        yield return PlayerNameAssignment.Instance.Initialize();
 
         GameObject networkTick = Instantiate(_networkTickPrefab);
         networkTick.GetComponent<NetworkObject>().Spawn(destroyWithScene: true);
@@ -104,5 +110,7 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
     {
         yield return new WaitUntil(() => PlayerSkinAssignment.Instance != null);
         yield return PlayerSkinAssignment.Instance.Initialize();
+        yield return new WaitUntil(() => PlayerNameAssignment.Instance != null);
+        yield return PlayerNameAssignment.Instance.Initialize();
     }
 }
