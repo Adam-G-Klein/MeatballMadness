@@ -207,4 +207,5 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
     public void OnToggleLooking(InputAction.CallbackContext context) { }
     public void OnMenu(InputAction.CallbackContext context) { }
     public void OnReel(InputAction.CallbackContext context) { }
+    public void OnEmote(InputAction.CallbackContext context) { }
 }

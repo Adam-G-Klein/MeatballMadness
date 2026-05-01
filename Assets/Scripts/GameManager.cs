@@ -70,4 +70,5 @@ public class GameManager : MonoBehaviour, InputSystem_Actions.IPlayerActions
     public void OnSprint(InputAction.CallbackContext context) {}
     public void OnToggleLooking(InputAction.CallbackContext context) {}
     public void OnReel(InputAction.CallbackContext context) {}
+    public void OnEmote(InputAction.CallbackContext context) {}
 }

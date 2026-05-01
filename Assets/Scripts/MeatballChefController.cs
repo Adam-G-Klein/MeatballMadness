@@ -10,6 +10,10 @@ public class MeatballChefController : MonoBehaviour
     [SerializeField] GameObject _chefPrefab;
 
     GameObject _chefInstance;
+    ChefAnimator _chefAnimator;
+
+    /// <summary>The ChefAnimator on the spawned chef instance (null until Start runs).</summary>
+    public ChefAnimator ChefAnimator => _chefAnimator;
 
     void Start()
     {
@@ -32,7 +36,8 @@ public class MeatballChefController : MonoBehaviour
         }
 
         _chefInstance = Instantiate(_chefPrefab, transform.position, Quaternion.identity);
-        _chefInstance.GetComponent<ChefAnimator>()?.Initialize(
+        _chefAnimator = _chefInstance.GetComponent<ChefAnimator>();
+        _chefAnimator?.Initialize(
             GetComponent<MeatballNetSync>(),
             GetComponent<MeatballClientInputHandler>(),
             followTarget);

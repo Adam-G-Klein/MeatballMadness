@@ -142,6 +142,16 @@ public class MeatballPhysicsController : NetworkBehaviour
         InputFrame frame = ResolveInputForTick(currentTick);
         ReelHeld = frame.reel;
 
+        // Weird callout: when the host processes a fresh emote bit for a meatball it
+        // doesn't own locally, fire the cosmetic emote on that meatball's chef on this
+        // machine. The owner's own chef plays the emote directly from OnEmote, so we
+        // skip IsOwner here to avoid a double-trigger.
+        if (frame.emote && !IsOwner && currentTick == _lastAppliedTick && _ticksSinceFreshInput == 0)
+        {
+            var chef = GetComponent<MeatballChefController>();
+            chef?.ChefAnimator?.PlayEmote();
+        }
+
         bool grounded = MeatballMotor.ComputeGrounded(
             _rb.position,
             _rb.linearVelocity,
@@ -157,6 +167,9 @@ public class MeatballPhysicsController : NetworkBehaviour
         // input" rule doesn't cause the host to fire a second jump once the meatball
         // becomes grounded mid-repeat-window.
         if (jumpConsumed) _lastAppliedInput.jump = false;
+
+        // Emote is a one-shot too — clear it so the repeat-last-input rule doesn't re-fire it.
+        _lastAppliedInput.emote = false;
 
         PruneOldInputs(currentTick);
     }

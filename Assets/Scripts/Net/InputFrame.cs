@@ -18,6 +18,7 @@ public struct InputFrame : INetworkSerializable
     public bool jump;
     public bool sprint;
     public bool reel;
+    public bool emote;
 
     public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
     {
@@ -26,6 +27,7 @@ public struct InputFrame : INetworkSerializable
         serializer.SerializeValue(ref jump);
         serializer.SerializeValue(ref sprint);
         serializer.SerializeValue(ref reel);
+        serializer.SerializeValue(ref emote);
     }
 
     public static InputFrame Zero(ulong tick) => new InputFrame
@@ -35,5 +37,6 @@ public struct InputFrame : INetworkSerializable
         jump = false,
         sprint = false,
         reel = false,
+        emote = false,
     };
 }

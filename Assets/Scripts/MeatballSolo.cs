@@ -187,6 +187,8 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
 
     public void OnReel(InputAction.CallbackContext context) { }
 
+    public void OnEmote(InputAction.CallbackContext context) { }
+
     // ── Ground Check ──────────────────────────────────────────────────────────
 
     bool CheckGround()

@@ -40,6 +40,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     private bool _jumpLatched;
     private bool _sprintHeld;
     private bool _reelHeld;
+    private bool _emoteLatched;
 
     // Tagged ring buffer of recent owner inputs. Preserved for reconciliation replay (step 8).
     private InputFrame[] _history;
@@ -137,6 +138,9 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         bool jump = _jumpLatched;
         _jumpLatched = false;
 
+        bool emote = _emoteLatched;
+        _emoteLatched = false;
+
         var frame = new InputFrame
         {
             tick = tick,
@@ -144,6 +148,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
             jump = jump,
             sprint = _sprintHeld,
             reel = _reelHeld,
+            emote = emote,
         };
 
         PushHistory(frame);
@@ -259,6 +264,17 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
     public void OnReel(InputAction.CallbackContext context)
     {
         _reelHeld = context.ReadValueAsButton();
+    }
+
+    public void OnEmote(InputAction.CallbackContext context)
+    {
+        if (!context.performed) return;
+        _emoteLatched = true;
+
+        // Play the emote locally for the owner immediately so there's no perceived delay.
+        // Remote chefs play it via MeatballPhysicsController when the host applies this frame.
+        var chef = GetComponent<MeatballChefController>();
+        chef?.ChefAnimator?.PlayEmote();
     }
 
     #endregion

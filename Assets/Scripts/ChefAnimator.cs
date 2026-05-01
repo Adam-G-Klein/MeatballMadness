@@ -192,6 +192,13 @@ public class ChefAnimator : MonoBehaviour
         return null;
     }
 
+    /// <summary>Plays the mama-mia emote one-shot on the chef's Animator.</summary>
+    public void PlayEmote()
+    {
+        if (_animator == null) return;
+        _animator.CrossFade("emote_mamamia", 0.1f, 0, 0f);
+    }
+
     void LateUpdate()
     {
         if (_followTarget == null) return;
