@@ -6,7 +6,7 @@ using UnityEngine;
 
 /// <summary>
 /// Host-only physics controller. Owns a tick-keyed input buffer fed by
-/// <see cref="MeatballClientInputHandler"/>, and each FixedUpdate looks up the input
+/// <see cref="MeatballInputDispatcher"/>, and each FixedUpdate looks up the input
 /// for the current <see cref="NetworkTick"/> and applies it via <see cref="MeatballMotor"/>.
 /// Disabled on non-host clients — they receive state from MeatballNetSync instead.
 ///
@@ -115,7 +115,9 @@ public class MeatballPhysicsController : NetworkBehaviour
     }
 
     /// <summary>
-    /// Called by MeatballClientInputHandler's redundant ServerRpc. Stores each frame
+    /// Called by <see cref="MeatballInputDispatcher"/> whenever an input frame lands on
+    /// the host (either generated locally on a host-owned meatball, or arrived via the
+    /// dispatcher's redundant ServerRpc from a client-owned meatball). Stores each frame
     /// in the tick-keyed dictionary; duplicates are ignored so redundancy costs nothing
     /// beyond the bytes on the wire.
     /// </summary>
@@ -142,16 +144,6 @@ public class MeatballPhysicsController : NetworkBehaviour
         InputFrame frame = ResolveInputForTick(currentTick);
         ReelHeld = frame.reel;
 
-        // Weird callout: when the host processes a fresh emote bit for a meatball it
-        // doesn't own locally, fire the cosmetic emote on that meatball's chef on this
-        // machine. The owner's own chef plays the emote directly from OnEmote, so we
-        // skip IsOwner here to avoid a double-trigger.
-        if (frame.emote && !IsOwner && currentTick == _lastAppliedTick && _ticksSinceFreshInput == 0)
-        {
-            var chef = GetComponent<MeatballChefController>();
-            chef?.ChefAnimator?.PlayEmote();
-        }
-
         bool grounded = MeatballMotor.ComputeGrounded(
             _rb.position,
             _rb.linearVelocity,
@@ -167,9 +159,6 @@ public class MeatballPhysicsController : NetworkBehaviour
         // input" rule doesn't cause the host to fire a second jump once the meatball
         // becomes grounded mid-repeat-window.
         if (jumpConsumed) _lastAppliedInput.jump = false;
-
-        // Emote is a one-shot too — clear it so the repeat-last-input rule doesn't re-fire it.
-        _lastAppliedInput.emote = false;
 
         PruneOldInputs(currentTick);
     }

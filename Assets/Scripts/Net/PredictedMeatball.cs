@@ -30,11 +30,11 @@ using UnityEngine;
 /// Rollout step 7 + step 8 from talk-me-through-what-rosy-pudding.md. Steps are fused
 /// because prediction without reconciliation would drift immediately.
 /// </summary>
-[DefaultExecutionOrder(50)] // after MeatballClientInputHandler (-100), same frame's input is ready
+[DefaultExecutionOrder(50)] // after MeatballInputDispatcher (-90), same frame's input is ready
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(MeatballPhysicsController))]
-[RequireComponent(typeof(MeatballClientInputHandler))]
+[RequireComponent(typeof(MeatballInputDispatcher))]
              
 public class PredictedMeatball : NetworkBehaviour
 {
@@ -114,7 +114,7 @@ public class PredictedMeatball : NetworkBehaviour
     private int _predictedCount;
 
     private Rigidbody _rb;
-    private MeatballClientInputHandler _input;
+    private MeatballInputDispatcher _input;
     private MeatballPhysicsController _controller;
     private MeatballMovementSettings _settings;
     private MeatballBounceSettings _bounceSettings;
@@ -157,7 +157,7 @@ public class PredictedMeatball : NetworkBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
-        _input = GetComponent<MeatballClientInputHandler>();
+        _input = GetComponent<MeatballInputDispatcher>();
         _controller = GetComponent<MeatballPhysicsController>();
         _settings = _controller.Settings;
         _bounceSettings = _controller.BounceSettings;

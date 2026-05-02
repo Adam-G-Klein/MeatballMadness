@@ -91,7 +91,7 @@ public class ChefAnimator : MonoBehaviour
 
     Transform _followTarget;
     MeatballNetSync _netSync;
-    MeatballClientInputHandler _inputHandler;
+    MeatballInputDispatcher _dispatcher;
     float _smoothedSpineAngle;
     float _smoothedBackwardLean;
     float _smoothedForwardLean;
@@ -119,11 +119,11 @@ public class ChefAnimator : MonoBehaviour
     }
 
     /// <summary>Called by MeatballChefController after spawning this prefab.</summary>
-    public void Initialize(MeatballNetSync netSync, MeatballClientInputHandler inputHandler, Transform target)
+    public void Initialize(MeatballNetSync netSync, MeatballInputDispatcher dispatcher, Transform target)
     {
         _followTarget = target;
         _netSync = netSync;
-        _inputHandler = inputHandler;
+        _dispatcher = dispatcher;
 
         if (_netSync == null)
         {
@@ -237,9 +237,10 @@ public class ChefAnimator : MonoBehaviour
 
     void UpdateSpineLean()
     {
-        if (_spineBone == null || _inputHandler == null) return;
+        if (_spineBone == null || _dispatcher == null) return;
 
-        Vector2 input = _inputHandler.CameraRelativeInput;
+        InputFrame latest = _dispatcher.LatestFrame;
+        Vector2 input = latest.move;
 
         float targetAngle = 0f;
         float clampedTargetAngle = 0f;
@@ -261,7 +262,7 @@ public class ChefAnimator : MonoBehaviour
         bool isOpposite = input.sqrMagnitude > 0.01f && Mathf.Abs(targetAngle) > 180f - _backwardLeanThreshold;
         float targetSideAngle   = isOpposite ? 0f : clampedTargetAngle;
         float targetBackAngle   = isOpposite ? _backwardLeanAngle : 0f;
-        float targetForwardLean = (!isOpposite && _inputHandler.SprintHeld) ? _forwardLeanAngle : 0f;
+        float targetForwardLean = (!isOpposite && latest.sprint) ? _forwardLeanAngle : 0f;
 
         _smoothedSpineAngle   = Mathf.Lerp(_smoothedSpineAngle,   targetSideAngle,   _spineLerpSpeed * Time.deltaTime);
         _smoothedBackwardLean = Mathf.Lerp(_smoothedBackwardLean, targetBackAngle,   _spineLerpSpeed * Time.deltaTime);

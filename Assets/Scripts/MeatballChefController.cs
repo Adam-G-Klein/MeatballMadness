@@ -39,7 +39,7 @@ public class MeatballChefController : MonoBehaviour
         _chefAnimator = _chefInstance.GetComponent<ChefAnimator>();
         _chefAnimator?.Initialize(
             GetComponent<MeatballNetSync>(),
-            GetComponent<MeatballClientInputHandler>(),
+            GetComponent<MeatballInputDispatcher>(),
             followTarget);
     }
 
