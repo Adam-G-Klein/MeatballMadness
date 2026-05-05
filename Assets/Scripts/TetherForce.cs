@@ -154,12 +154,14 @@ public class TetherForce : NetworkBehaviour
         _prevPathLenByOther.Clear();
     }
 
+    private bool ShouldSimulate => _controller != null && _controller.ShouldSimulate;
+
     private void FixedUpdate()
     {
-        if (!IsServer) return;
+        if (!ShouldSimulate) return;
 
         UpdateAllPivots();
-        SyncPivotsToClients();
+        if (IsServer) SyncPivotsToClients();
         ApplyTetherForces();
     }
 
@@ -498,7 +500,7 @@ public class TetherForce : NetworkBehaviour
         outPath.Clear();
         outPath.Add(_rb != null ? _rb.position : transform.position);
 
-        if (IsServer)
+        if (ShouldSimulate)
         {
             if (_pivotsByOther.TryGetValue(other, out var pivots))
             {

@@ -31,6 +31,7 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         _dispatcher = GetComponent<MeatballInputDispatcher>();
         _actions = new InputSystem_Actions();
         enabled = false; // stay off until OnNetworkSpawn confirms ownership
+        EnableIfTimelineDriven();
     }
 
     public override void OnNetworkSpawn()
@@ -62,6 +63,12 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         bool emote = _emoteLatched;
         _emoteLatched = false;
 
+        if (_rawMove.sqrMagnitude > 0.001f)
+        {
+            Debug.Log("[MeatballClientInputHandler] _rawMove is non-zero:", this);
+        }
+   
+
         var frame = new InputFrame
         {
             tick = tick,
@@ -91,6 +98,24 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         Vector3 worldDir = camForward * raw.y + camRight * raw.x;
         return new Vector2(worldDir.x, worldDir.z);
     }
+
+    /// <summary>
+    /// Called by <see cref="TimelineDrivenMeatball"/> in its Awake. Verifies the component
+    /// is actually present on this GameObject before bypassing the OnNetworkSpawn/IsOwner
+    /// gate, so nothing else can flip the handler on by calling this. Doesn't subscribe to
+    /// real InputSystem callbacks — synthetic input via Inject* only.
+    /// </summary>
+    public void EnableIfTimelineDriven()
+    {
+        if (GetComponent<TimelineDrivenMeatball>() == null) return;
+        enabled = true;
+    }
+
+    public void InjectMove(Vector2 raw) => _rawMove = raw;
+    public void InjectJump() => _jumpLatched = true;
+    public void InjectSprint(bool held) => _sprintHeld = held;
+    public void InjectReel(bool held) => _reelHeld = held;
+    public void InjectEmote() => _emoteLatched = true;
 
     #region InputSystem_Actions.IPlayerActions
 

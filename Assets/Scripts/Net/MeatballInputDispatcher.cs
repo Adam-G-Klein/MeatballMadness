@@ -52,6 +52,15 @@ public class MeatballInputDispatcher : NetworkBehaviour
     [SerializeField] private bool _logReceipt;
     [SerializeField] private bool _logBroadcast;
 
+    /// <summary>
+    /// True when this meatball is being driven by a <c>TimelineDrivenMeatball</c> component
+    /// (main-menu animatic, etc.) rather than by real player input through the network.
+    /// Scripts gated on <c>IsServer</c>/<c>IsOwner</c> can read this flag to opt-in to
+    /// running for timeline-driven meatballs that never go through <c>OnNetworkSpawn</c>.
+    /// Set by <c>TimelineDrivenMeatball.Awake</c>.
+    /// </summary>
+    public bool IsTimelineDriven { get; set; }
+
     private MeatballPhysicsController _controller;
     private MeatballChefController _chef;
 
@@ -112,6 +121,7 @@ public class MeatballInputDispatcher : NetworkBehaviour
         _chef = GetComponent<MeatballChefController>();
         _history = new InputFrame[Mathf.Max(8, _historySize)];
         _sendBuffer = new InputFrame[Mathf.Clamp(_redundancy, 1, _history.Length)];
+        IsTimelineDriven = GetComponent<TimelineDrivenMeatball>() != null;
     }
 
     /// <summary>
@@ -124,6 +134,11 @@ public class MeatballInputDispatcher : NetworkBehaviour
     {
         PushHistory(frame);
         ActionFrameLocally(frame);
+
+        // Timeline-driven meatballs don't go through the network: ActionFrameLocally
+        // already ran physics for this frame, and there's no host to send to or peers
+        // to broadcast to.
+        if (IsTimelineDriven) return;
 
         bool eventBearing = IsEventBearing(frame);
 
@@ -251,10 +266,10 @@ public class MeatballInputDispatcher : NetworkBehaviour
     /// </summary>
     private void ActionFrameLocally(InputFrame frame)
     {
-        if (IsServer)
+        if (IsServer || IsTimelineDriven)
         {
-            // ReceiveInputs is no-op on non-server, so the IsServer gate is also defensive
-            // (matches the existing controller contract).
+            // ReceiveInputs gates on ShouldSimulate (IsServer || IsTimelineDriven), so
+            // this check just avoids an unnecessary array alloc on non-simulating clients.
             _controller.ReceiveInputs(new[] { frame });
         }
 

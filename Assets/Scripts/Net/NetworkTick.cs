@@ -49,6 +49,11 @@ public class NetworkTick : NetworkBehaviour
     private bool _clientHasSynced;
     private ulong _lastSyncedHostTick;
 
+    // True when this NetworkTick is being driven by a TimelineDrivenMeatball outside the
+    // netcode spawn pipeline (no NetworkManager). FixedUpdate ticks normally when this is
+    // set even though IsSpawned stays false.
+    private bool _localTick;
+
     /// <summary>
     /// Authoritative tick on the host. On clients, an estimate of the host tick that
     /// will be current when this client's tick-T input arrives at the host.
@@ -78,9 +83,27 @@ public class NetworkTick : NetworkBehaviour
         if (Instance == this) Instance = null;
     }
 
+    /// <summary>
+    /// Singleton + counter setup for a NetworkTick that's used outside the netcode spawn
+    /// pipeline (main-menu animatic with TimelineDrivenMeatball — no NetworkManager).
+    /// Mirrors OnNetworkSpawn minus the NetworkManager.LocalClientId log, which would NRE
+    /// without a NetworkManager. Also flips an internal flag so FixedUpdate ticks normally
+    /// without needing NetworkObject.IsSpawned (whose setter is internal to netcode).
+    /// </summary>
+    public void ActivateAsLocalTick()
+    {
+        if (Instance != null && Instance != this) return;
+        Instance = this;
+        _currentTick = 0;
+        _ticksSinceBroadcast = 0;
+        _nextLogTime = Time.time + _logIntervalSeconds;
+        _clientHasSynced = false;
+        _localTick = true;
+    }
+
     private void FixedUpdate()
     {
-        if (!IsSpawned) return;
+        if (!IsSpawned && !_localTick) return;
 
         _currentTick++;
 

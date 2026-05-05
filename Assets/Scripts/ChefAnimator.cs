@@ -131,6 +131,15 @@ public class ChefAnimator : MonoBehaviour
             return;
         }
 
+        // Timeline-driven meatballs (main menu) bypass PlayerSkinAssignment entirely —
+        // every meatball shares the host's clientId in that scene, so the dummy index
+        // on the component is the only thing that can give them distinct skins.
+        if (_netSync.TryGetComponent<TimelineDrivenMeatball>(out var timelineDriven))
+        {
+            ApplySkin((int)timelineDriven.DummyClientId);
+            return;
+        }
+
         ulong ownerClientId = netSync.OwnerClientId;
         if (PlayerSkinAssignment.Instance != null && PlayerSkinAssignment.Instance.HasSkinIndex(ownerClientId))
             ApplySkin(PlayerSkinAssignment.Instance.GetSkinIndex(ownerClientId));

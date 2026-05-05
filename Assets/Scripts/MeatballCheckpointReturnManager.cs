@@ -22,6 +22,20 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 {
     public static MeatballCheckpointReturnManager Instance { get; private set; }
 
+    /// <summary>
+    /// True when this machine should drive recall logic locally: either it's the NGO server,
+    /// or a <see cref="MainMenuMeatballAnimationManager"/> singleton exists in the scene
+    /// (the main-menu animatic runs without any NetworkManager, so IsServer is always false
+    /// there even though the meatballs need to behave as if locally simulated).
+    /// </summary>
+    public bool ShouldSimulate => IsServer || MainMenuMeatballAnimationManager.Instance != null;
+
+    /// <summary>
+    /// True when this machine is acting as the main-menu animatic driver rather than a real
+    /// networked host. Used to gate ServerRpc/ClientRpc paths that can't run without NGO.
+    /// </summary>
+    public bool IsMainMenu => MainMenuMeatballAnimationManager.Instance != null && !IsServer;
+
     [Header("Input")]
     [Tooltip("Keyboard key that requests all players be returned to the current checkpoint.")]
     [SerializeField] private Key recallKey = Key.R;
@@ -85,9 +99,19 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
         }
     }
 
+    private void Start()
+    {
+        // The main-menu animatic never spawns this as a NetworkObject, so OnNetworkSpawn
+        // never runs. Seed the active checkpoint from the inspector default here.
+        if (activeCheckpoint == null && startingCheckpoint != null && ShouldSimulate)
+            activeCheckpoint = startingCheckpoint;
+    }
+
     private void Update()
     {
-        if (!IsClient)
+        // In the main menu there is no IsClient (no NetworkManager). Still let the recall
+        // key fire locally so designers can manually trigger respawns while iterating.
+        if (!IsClient && !IsMainMenu)
             return;
 
         if (Keyboard.current == null)
@@ -95,7 +119,10 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 
         if (Keyboard.current[recallKey].wasPressedThisFrame)
         {
-            RequestRecallServerRpc();
+            if (IsMainMenu)
+                RecallAllPlayers();
+            else
+                RequestRecallServerRpc();
         }
     }
 
@@ -111,7 +138,7 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
     /// </summary>
     public void SetActiveCheckpoint(MeatballCheckpointTrigger checkpoint)
     {
-        if (!IsServer)
+        if (!ShouldSimulate)
             return;
 
         if (checkpoint == null)
@@ -124,9 +151,9 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
     [ContextMenu("Recall All Players")]
     public void RecallAllPlayers()
     {
-        if (!IsServer)
+        if (!ShouldSimulate)
         {
-            Debug.LogWarning("[MeatballCheckpointReturnManager] RecallAllPlayers can only run on the server.");
+            Debug.LogWarning("[MeatballCheckpointReturnManager] RecallAllPlayers can only run on the server (or in main-menu animatic mode).");
             return;
         }
 
@@ -141,6 +168,26 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
         if (players.Count == 0)
         {
             Debug.LogWarning("[MeatballCheckpointReturnManager] No spawned MeatballPhysicsController players found.");
+            return;
+        }
+
+        if (IsMainMenu)
+        {
+            // No NGO, no ClientRpc, no acks. Just rebuild local spaghetti chains around the
+            // teleport so the visual doesn't whip from the old anchor positions.
+            for (int i = 0; i < SpaghettiRenderer.Instances.Count; i++)
+                SpaghettiRenderer.Instances[i]?.BeginChainRebuild();
+
+            for (int i = 0; i < players.Count; i++)
+            {
+                Transform targetSpot = activeCheckpoint.GetSpotForIndex(i, reuseLastSpotIfNeeded);
+                if (targetSpot == null) continue;
+                MovePlayerToSpot(players[i], targetSpot);
+            }
+
+            for (int i = 0; i < SpaghettiRenderer.Instances.Count; i++)
+                SpaghettiRenderer.Instances[i]?.EndChainRebuild();
+
             return;
         }
 
@@ -299,6 +346,7 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
     {
         MeatballPhysicsController[] found = FindObjectsByType<MeatballPhysicsController>(FindObjectsSortMode.None);
         List<MeatballPhysicsController> validPlayers = new List<MeatballPhysicsController>();
+        bool requireSpawned = !IsMainMenu;
 
         for (int i = 0; i < found.Length; i++)
         {
@@ -307,16 +355,27 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
             if (controller == null)
                 continue;
 
-            if (controller.NetworkObject == null)
-                continue;
+            if (requireSpawned)
+            {
+                // Networked play: only consider meatballs that have completed NGO spawn so
+                // OwnerClientId / network state are valid.
+                if (controller.NetworkObject == null)
+                    continue;
 
-            if (!controller.NetworkObject.IsSpawned)
-                continue;
+                if (!controller.NetworkObject.IsSpawned)
+                    continue;
+            }
 
             validPlayers.Add(controller);
         }
 
-        validPlayers.Sort((a, b) => a.OwnerClientId.CompareTo(b.OwnerClientId));
+        // Stable order across recalls. In the main menu the NetworkObject isn't spawned so
+        // OwnerClientId is the default 0 on every meatball — fall back to sibling index so
+        // the spawn-spot mapping is deterministic and inspector-controllable.
+        if (IsMainMenu)
+            validPlayers.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
+        else
+            validPlayers.Sort((a, b) => a.OwnerClientId.CompareTo(b.OwnerClientId));
         return validPlayers;
     }
 

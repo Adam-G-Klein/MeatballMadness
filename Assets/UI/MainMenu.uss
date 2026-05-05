@@ -1,0 +1,80 @@
+.menu-root {
+    flex-grow: 1;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 64px;
+    -unity-font: url("DynaPuff_SemiCondensed-Bold.ttf");
+}
+
+.logo-slot {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.button-stack {
+    align-items: flex-start;
+}
+
+.primary-button {
+    min-width: 380px;
+    margin: 0 0 14px 0;
+    padding: 14px 28px;
+    font-size: 32px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.72);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0);
+    border-radius: 24px;
+    -unity-text-align: middle-left;
+    transition-property: background-color, scale;
+    transition-duration: 120ms;
+}
+
+.primary-button:hover {
+    background-color: rgba(0, 0, 0, 0.92);
+    border-color: rgb(255, 255, 255);
+}
+
+.primary-button:active,
+.primary-button:focus {
+    background-color: rgba(0, 0, 0, 0.97);
+    border-color: rgb(255, 255, 255);
+}
+
+.secondary-row {
+    flex-direction: row;
+    margin-top: 8px;
+}
+
+.secondary-button {
+    margin: 0 10px 0 0;
+    padding: 8px 18px;
+    font-size: 20px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.72);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0);
+    border-radius: 18px;
+    -unity-text-align: middle-center;
+    transition-property: background-color;
+    transition-duration: 120ms;
+}
+
+.secondary-button:hover {
+    background-color: rgba(0, 0, 0, 0.92);
+    border-color: rgb(255, 255, 255);
+}
+
+.secondary-button:active,
+.secondary-button:focus {
+    background-color: rgba(0, 0, 0, 0.97);
+    border-color: rgb(255, 255, 255);
+}
+
+.status-label {
+    margin-top: 12px;
+    font-size: 16px;
+    color: rgb(255, 255, 255);
+    -unity-text-align: middle-left;
+}

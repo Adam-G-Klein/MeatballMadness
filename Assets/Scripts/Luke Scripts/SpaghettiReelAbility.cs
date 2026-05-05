@@ -138,9 +138,11 @@ public class SpaghettiReelAbility : NetworkBehaviour
         StopLoopAudioImmediate();
     }
 
+    private bool ShouldSimulate => _controller != null && _controller.ShouldSimulate;
+
     private void FixedUpdate()
     {
-        if (!IsServer)
+        if (!ShouldSimulate)
             return;
 
         UpdateServerReelStateFromGrounding();
@@ -151,22 +153,22 @@ public class SpaghettiReelAbility : NetworkBehaviour
         if (_controller == null || playerRigidbody == null || reelSettings == null)
             return;
 
-        for (int i = 0; i < MeatballPhysicsController.ServerInstances.Count; i++)
+        for (int i = 0; i < TetherForce.Instances.Count; i++)
         {
-            MeatballPhysicsController otherController = MeatballPhysicsController.ServerInstances[i];
+            TetherForce otherTether = TetherForce.Instances[i];
 
-            if (otherController == null)
+            if (otherTether == null || otherTether == _tether)
                 continue;
 
-            if (otherController == _controller)
+            MeatballPhysicsController otherController = otherTether.GetComponent<MeatballPhysicsController>();
+            if (otherController == null)
                 continue;
 
             Rigidbody partnerRb = otherController.Rigidbody;
             if (partnerRb == null)
                 continue;
 
-            TetherForce partnerTether = otherController.GetComponent<TetherForce>();
-            ApplyReelForces(playerRigidbody, partnerRb, partnerTether);
+            ApplyReelForces(playerRigidbody, partnerRb, otherTether);
         }
     }
 
@@ -211,7 +213,7 @@ public class SpaghettiReelAbility : NetworkBehaviour
             return;
 
         _serverIsReeling = shouldBeReeling;
-        _replicatedIsReeling.Value = shouldBeReeling;
+        if (IsServer) _replicatedIsReeling.Value = shouldBeReeling;
 
         if (debugLogs)
         {

@@ -61,8 +61,22 @@ The preferred pattern is the **callback subscription** method:
 
 **Why callbacks over polling:** Callbacks are event-driven and fire exactly when input changes. Polling `ReadValue` every frame works but ties input sampling to frame rate and makes it easy to miss short-pressed buttons. The callback pattern also cleanly separates input registration from game logic.
 
+### Main Menu UI — UI Toolkit (single UXML + class-per-view)
+
+- **Single UXML, visibility toggling:** All sub-menus are declared in one UXML file and start hidden (`display: none`). Each sub-menu gets a dedicated C# class that owns its `Q<>()` queries, event registration, and `Show()`/`Hide()` via `style.display`.
+- **Coordinator pattern:** `MainMenuController` (MonoBehaviour) instantiates each view class against `UIDocument.rootVisualElement`, drives navigation (`_current?.Hide(); next.Show()`), and wires cross-view events.
+- **Teardown rule:** Always call `UnregisterValueChangedCallback` on teardown — UI Toolkit does not auto-clean callbacks when elements are hidden.
+
 ## Development Workflow
 
 - Build and iterate from the Unity Editor (no CLI build scripts)
 - Build shared gameplay as **prefabs** (Meatball prefab, Tether prefab, etc.) so changes propagate across scenes without merge conflicts
 - Unity `.unity` scene files are YAML and will conflict — minimize scene-level changes, prefer prefab-based workflows
+
+## Debugging Notes
+
+### Chef stuck facing one direction (Animator "Apply Root Motion")
+
+`ChefAnimator.UpdateFacingAndLean` writes `_skinRoot.rotation` in LateUpdate, slerping toward the velocity direction. If the chef visibly stops rotating, the instinct is to suspect the input pipeline, the camera-relative transform, or `NetworkedVelocity` reading zero — but check the chef skin's **Animator → Apply Root Motion** first. With it OFF, the Animator clip's baked root rotation effectively wins over the script's `_skinRoot.rotation` assignment, and the chef snaps back to the clip's authored facing every frame regardless of what LateUpdate writes. The fix is to leave Apply Root Motion **on** and let the script's rotation assignment compose with the clip normally.
+
+Diagnostic recipe if it happens again: temporarily log `vel`, `horizontalVel.magnitude`, the gate boolean, and `_skinRoot.rotation.eulerAngles` once per second inside `UpdateFacingAndLean`. If the gate is open and `vel` is sensible but `skinRootEuler` doesn't budge across frames, the rotation is being overwritten downstream — Apply Root Motion is the prime suspect.

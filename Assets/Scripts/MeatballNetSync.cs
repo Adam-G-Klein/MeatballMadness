@@ -67,11 +67,20 @@ public class MeatballNetSync : NetworkBehaviour
     public ulong LatestSnapshotTick => _hasSnapshot ? _latestSnapshot.tick : 0UL;
 
     /// <summary>
+    /// True when this machine should be treated as the authoritative physics source —
+    /// either we're the NGO server, or the meatball is being driven locally for the
+    /// main-menu animatic (timeline-driven, no network session active).
+    /// Mirrors the ShouldSimulate carveout used by TetherForce and SpaghettiReelAbility.
+    /// </summary>
+    private bool ShouldSimulate => IsServer || (_controller != null && _controller.ShouldSimulate);
+
+    /// <summary>
     /// Returns the meatball's velocity valid on both host (live Rigidbody) and clients
     /// (latest received snapshot). Use this instead of rb.linearVelocity on non-host code
     /// paths (e.g. tether damping reads, visual effects).
+    /// In the main menu (no network session), reads directly from the Rigidbody.
     /// </summary>
-    public Vector3 NetworkedVelocity => IsServer ? _rb.linearVelocity : _latestSnapshot.velocity;
+    public Vector3 NetworkedVelocity => ShouldSimulate ? _rb.linearVelocity : _latestSnapshot.velocity;
 
     private void Awake()
     {

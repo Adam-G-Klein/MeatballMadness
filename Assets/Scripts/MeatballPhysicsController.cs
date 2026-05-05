@@ -64,6 +64,7 @@ public class MeatballPhysicsController : NetworkBehaviour
     private readonly List<CollisionImpulse> _pendingCollisionImpulses = new();
 
     private Rigidbody _rb;
+    private MeatballInputDispatcher _dispatcher;
     private float _jumpHeightRampAugment;
     private static readonly Collider[] _groundHits = new Collider[8];
 
@@ -74,10 +75,18 @@ public class MeatballPhysicsController : NetworkBehaviour
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
+        _dispatcher = GetComponent<MeatballInputDispatcher>();
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
         ApplyRigidbodySettings();
         ApplyPhysicsMaterial();
     }
+
+    /// <summary>
+    /// True when this controller should drive physics on the local machine — either it's
+    /// the server (real networked play) or the meatball is being driven by a
+    /// <c>TimelineDrivenMeatball</c> for a non-networked main-menu animatic.
+    /// </summary>
+    public bool ShouldSimulate => IsServer || (_dispatcher != null && _dispatcher.IsTimelineDriven);
 
     private void ApplyRigidbodySettings()
     {
@@ -123,7 +132,7 @@ public class MeatballPhysicsController : NetworkBehaviour
     /// </summary>
     public void ReceiveInputs(InputFrame[] frames)
     {
-        if (!IsServer || frames == null) return;
+        if (!ShouldSimulate || frames == null) return;
         for (int i = 0; i < frames.Length; i++)
         {
             var f = frames[i];
@@ -137,7 +146,7 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     private void FixedUpdate()
     {
-        if (!IsServer) return;
+        if (!ShouldSimulate) return;
 
         ulong currentTick = NetworkTick.Instance != null ? NetworkTick.Instance.Current : 0;
 

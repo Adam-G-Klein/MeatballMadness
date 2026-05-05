@@ -15,6 +15,7 @@
   <Project Path="Unity.Services.Vivox.csproj" />
   <Project Path="Unity.Mathematics.csproj" />
   <Project Path="Unity.Timeline.Editor.csproj" />
+  <Project Path="Unity.Cinemachine.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Center.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
   <Project Path="UnityEngine.UI.csproj" />
@@ -27,6 +28,7 @@
   <Project Path="Unity.PerformanceTesting.Editor.csproj" />
   <Project Path="glTFast.Editor.csproj" />
   <Project Path="UnityEngine.TestRunner.csproj" />
+  <Project Path="Unity.Splines.csproj" />
   <Project Path="Unity.Burst.csproj" />
   <Project Path="Unity.Services.Core.Environments.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkProfiler.Editor.csproj" />
@@ -59,10 +61,12 @@
   <Project Path="Unity.TestTools.CodeCoverage.Editor.csproj" />
   <Project Path="unity-websocket-sharp.csproj" />
   <Project Path="Unity.Burst.CodeGen.csproj" />
+  <Project Path="Unity.Cinemachine.csproj" />
   <Project Path="Unity.Services.Core.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Shared.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Common.csproj" />
   <Project Path="Unity.VisualScripting.Flow.csproj" />
+  <Project Path="Unity.Splines.Editor.csproj" />
   <Project Path="Unity.PerformanceTesting.csproj" />
   <Project Path="Unity.TestTools.CodeCoverage.Editor.OpenCover.Model.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.csproj" />
