@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
@@ -37,6 +38,12 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 
     [Tooltip("If there are more players than checkpoint spots, reuse the last spot.")]
     [SerializeField] private bool reuseLastSpotIfNeeded = false;
+
+    [Tooltip("Seconds to keep every spaghetti chain suppressed after the teleport so that " +
+             "the new meatball positions have time to sync to every client before the chains " +
+             "rebuild. Too short = chains rebuild on stale positions and snap; too long = " +
+             "noticeable visual gap with no rope.")]
+    [SerializeField] private float spaghettiRebuildDelay = 0.25f;
 
     [Header("Debug")]
     [Tooltip("Optional starting checkpoint active from scene load.")]
@@ -123,6 +130,13 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
             return;
         }
 
+        // Trash every spaghetti chain on every machine BEFORE moving the meatballs. Without this,
+        // interior Verlet nodes carry over from the pre-teleport location and whip violently as
+        // the constraint solver drags them toward the new anchor positions — and the bug we hit
+        // is that not every client agrees on which chains to clear, leaving some tethered to the
+        // old obstacle while their meatballs are at the new spawn.
+        BeginSpaghettiRebuildClientRpc();
+
         for (int i = 0; i < players.Count; i++)
         {
             Transform targetSpot = activeCheckpoint.GetSpotForIndex(i, reuseLastSpotIfNeeded);
@@ -132,6 +146,31 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
 
             MovePlayerToSpot(players[i], targetSpot);
         }
+
+        // Hold the suppression long enough for the post-teleport position snapshots to reach
+        // every client; the End RPC then lets each renderer rebuild from its now-correct
+        // local anchor positions.
+        StartCoroutine(EndSpaghettiRebuildAfterDelay());
+    }
+
+    private IEnumerator EndSpaghettiRebuildAfterDelay()
+    {
+        yield return new WaitForSeconds(spaghettiRebuildDelay);
+        EndSpaghettiRebuildClientRpc();
+    }
+
+    [ClientRpc]
+    private void BeginSpaghettiRebuildClientRpc()
+    {
+        for (int i = 0; i < SpaghettiRenderer.Instances.Count; i++)
+            SpaghettiRenderer.Instances[i]?.BeginChainRebuild();
+    }
+
+    [ClientRpc]
+    private void EndSpaghettiRebuildClientRpc()
+    {
+        for (int i = 0; i < SpaghettiRenderer.Instances.Count; i++)
+            SpaghettiRenderer.Instances[i]?.EndChainRebuild();
     }
 
     private List<MeatballPhysicsController> GetSortedPlayers()

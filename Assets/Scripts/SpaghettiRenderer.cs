@@ -79,6 +79,11 @@ public class SpaghettiRenderer : MonoBehaviour
     private LineRenderer _lineRenderer;
     private TetherForce  _tether; // cached reference — same GameObject as the meatball
 
+    // When true, LateUpdate skips simulation entirely. Used by checkpoint recall to suspend
+    // the chain while meatballs teleport, so the rebuild lerps interior nodes between the new
+    // anchor positions instead of inheriting stale positions from the old location.
+    private bool _rebuildSuppressed;
+
     /// <summary>Exposes this meatball's TetherForce so its partner's renderer can query the wrapped path.</summary>
     public TetherForce Tether => _tether;
 
@@ -126,10 +131,34 @@ public class SpaghettiRenderer : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Discards every chain this renderer owns and suspends simulation until
+    /// <see cref="EndChainRebuild"/> is called. The next LateUpdate after the suspension lifts
+    /// will rebuild each chain from scratch with interior nodes lerped between the current
+    /// (post-teleport) anchor positions — eliminating the violent whip that would otherwise
+    /// happen when interior nodes left over from the pre-teleport location stretch toward the
+    /// new anchors.
+    /// </summary>
+    public void BeginChainRebuild()
+    {
+        _rebuildSuppressed = true;
+        _chains.Clear();
+
+        if (_lineRenderer != null) _lineRenderer.positionCount = 0;
+        foreach (var kv in _partnerLines)
+            if (kv.Value != null) kv.Value.positionCount = 0;
+    }
+
+    /// <summary>Lifts the suspension started by <see cref="BeginChainRebuild"/>; the next
+    /// LateUpdate sees no cached chain and rebuilds fresh from current anchor positions.</summary>
+    public void EndChainRebuild() => _rebuildSuppressed = false;
+
     // ── Simulation ──────────────────────────────────────────────────────────
 
     private void LateUpdate()
     {
+        if (_rebuildSuppressed) return;
+
         // Only simulate pairs where this instance has a lower index than its partner.
         // Guarantees exactly one chain per pair with no coordination between renderers.
         int myIndex = Instances.IndexOf(this);
