@@ -39,17 +39,31 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
     [Tooltip("If there are more players than checkpoint spots, reuse the last spot.")]
     [SerializeField] private bool reuseLastSpotIfNeeded = false;
 
-    [Tooltip("Seconds to keep every spaghetti chain suppressed after the teleport so that " +
-             "the new meatball positions have time to sync to every client before the chains " +
-             "rebuild. Too short = chains rebuild on stale positions and snap; too long = " +
-             "noticeable visual gap with no rope.")]
-    [SerializeField] private float spaghettiRebuildDelay = 0.25f;
+    [Tooltip("Safety fallback: each client must report back when it has processed the " +
+             "post-teleport meatball snapshot before the spaghetti chains are rebuilt. If a " +
+             "client never reports (packet loss, mid-recall disconnect) the chain stays " +
+             "suppressed forever. After this many seconds the server forces the rebuild.")]
+    [SerializeField] private float spaghettiRebuildAckTimeout = 2f;
 
     [Header("Debug")]
     [Tooltip("Optional starting checkpoint active from scene load.")]
     [SerializeField] private MeatballCheckpointTrigger startingCheckpoint;
 
     private MeatballCheckpointTrigger activeCheckpoint;
+
+    // ── Recall ack tracking (server only) ──────────────────────────────────
+    // The recall flow now waits for every remote client to acknowledge that it has processed
+    // a meatball snapshot generated AFTER the host's teleport. Until every client acks, the
+    // spaghetti chains stay suppressed so the rebuild always happens against post-teleport
+    // anchor positions (not stale ones inherited from a delayed snapshot).
+    private bool _recallInProgress;
+    private ulong _recallEpoch;                       // bumps on every recall to invalidate stale acks
+    private readonly HashSet<ulong> _pendingAcks = new();
+    private Coroutine _ackTimeoutRoutine;
+
+    // ── Client-side ack watcher (every machine, including host's client side) ──
+    private ulong _localRecallEpoch;
+    private Coroutine _ackWatcherRoutine;
 
     private void Awake()
     {
@@ -130,12 +144,30 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
             return;
         }
 
-        // Trash every spaghetti chain on every machine BEFORE moving the meatballs. Without this,
-        // interior Verlet nodes carry over from the pre-teleport location and whip violently as
-        // the constraint solver drags them toward the new anchor positions — and the bug we hit
-        // is that not every client agrees on which chains to clear, leaving some tethered to the
-        // old obstacle while their meatballs are at the new spawn.
-        BeginSpaghettiRebuildClientRpc();
+        // Capture the post-teleport snapshot threshold BEFORE moving. The next host broadcast
+        // (tick > currentTick) is the first one that reflects the new positions, so clients ack
+        // on receiving any snapshot whose tick is at or beyond `requiredTick`. Bumping the epoch
+        // up front invalidates any in-flight ack/timeout from a prior recall.
+        ulong currentTick = NetworkTick.Instance != null ? NetworkTick.Instance.Current : 0;
+        ulong requiredTick = currentTick + 1;
+        _recallEpoch++;
+
+        _pendingAcks.Clear();
+        var connected = NetworkManager.Singleton.ConnectedClientsIds;
+        for (int c = 0; c < connected.Count; c++)
+        {
+            ulong cid = connected[c];
+            // Host doesn't ack — its meatballs are at new positions instantly via the teleport
+            // below, and the End broadcast that releases the chain runs on host like any client.
+            if (cid == NetworkManager.ServerClientId) continue;
+            _pendingAcks.Add(cid);
+        }
+        _recallInProgress = true;
+
+        // Trash every spaghetti chain on every machine BEFORE moving. Without this, interior
+        // Verlet nodes carry over from the pre-teleport location and whip violently when the
+        // constraint solver drags them toward the new anchors.
+        BeginSpaghettiRebuildClientRpc(_recallEpoch, requiredTick);
 
         for (int i = 0; i < players.Count; i++)
         {
@@ -147,23 +179,107 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
             MovePlayerToSpot(players[i], targetSpot);
         }
 
-        // Hold the suppression long enough for the post-teleport position snapshots to reach
-        // every client; the End RPC then lets each renderer rebuild from its now-correct
-        // local anchor positions.
-        StartCoroutine(EndSpaghettiRebuildAfterDelay());
+        if (_pendingAcks.Count == 0)
+        {
+            // Solo / host-only — no remote clients to wait on. Release immediately.
+            FinishSpaghettiRebuild(_recallEpoch);
+        }
+        else
+        {
+            if (_ackTimeoutRoutine != null) StopCoroutine(_ackTimeoutRoutine);
+            _ackTimeoutRoutine = StartCoroutine(AckTimeoutCoroutine(_recallEpoch));
+        }
     }
 
-    private IEnumerator EndSpaghettiRebuildAfterDelay()
+    private IEnumerator AckTimeoutCoroutine(ulong epoch)
     {
-        yield return new WaitForSeconds(spaghettiRebuildDelay);
+        yield return new WaitForSeconds(spaghettiRebuildAckTimeout);
+        if (epoch != _recallEpoch || !_recallInProgress) yield break;
+
+        Debug.LogWarning($"[MeatballCheckpointReturnManager] Spaghetti rebuild ack timeout — " +
+                         $"{_pendingAcks.Count} client(s) did not report. Forcing rebuild.");
+        FinishSpaghettiRebuild(epoch);
+    }
+
+    private void FinishSpaghettiRebuild(ulong epoch)
+    {
+        if (epoch != _recallEpoch) return;
+        if (!_recallInProgress) return;
+
+        _recallInProgress = false;
+        _pendingAcks.Clear();
+
+        if (_ackTimeoutRoutine != null)
+        {
+            StopCoroutine(_ackTimeoutRoutine);
+            _ackTimeoutRoutine = null;
+        }
+
         EndSpaghettiRebuildClientRpc();
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    private void RecallAcknowledgedServerRpc(ulong epoch, ServerRpcParams rpcParams = default)
+    {
+        // Stale acks from a prior recall — or a recall that's already concluded — are dropped.
+        if (!_recallInProgress) return;
+        if (epoch != _recallEpoch) return;
+
+        ulong sender = rpcParams.Receive.SenderClientId;
+        if (!_pendingAcks.Remove(sender)) return;
+
+        if (_pendingAcks.Count == 0)
+            FinishSpaghettiRebuild(epoch);
+    }
+
     [ClientRpc]
-    private void BeginSpaghettiRebuildClientRpc()
+    private void BeginSpaghettiRebuildClientRpc(ulong epoch, ulong requiredTick)
     {
         for (int i = 0; i < SpaghettiRenderer.Instances.Count; i++)
             SpaghettiRenderer.Instances[i]?.BeginChainRebuild();
+
+        // Host doesn't run the ack watcher: the server already excluded itself from the
+        // pending-ack set and its meatballs are at the new positions immediately.
+        if (IsServer) return;
+
+        _localRecallEpoch = epoch;
+        if (_ackWatcherRoutine != null) StopCoroutine(_ackWatcherRoutine);
+        _ackWatcherRoutine = StartCoroutine(AckWatcherCoroutine(epoch, requiredTick));
+    }
+
+    private IEnumerator AckWatcherCoroutine(ulong epoch, ulong requiredTick)
+    {
+        // Poll once per frame: every meatball's MeatballNetSync must have processed a snapshot
+        // whose tick is at or beyond `requiredTick` before this client confirms it has the
+        // new state. Snapshot ticks are stamped in the server's tick domain (see
+        // MeatballNetSync.HostBroadcast) so comparison against the server-supplied requiredTick
+        // is well-defined.
+        while (true)
+        {
+            // A newer recall has superseded us — let its watcher take over.
+            if (epoch != _localRecallEpoch)
+            {
+                _ackWatcherRoutine = null;
+                yield break;
+            }
+
+            MeatballNetSync[] syncs = FindObjectsByType<MeatballNetSync>(FindObjectsSortMode.None);
+            bool allReady = syncs.Length > 0;
+            for (int i = 0; i < syncs.Length; i++)
+            {
+                if (syncs[i] == null) continue;
+                if (syncs[i].LatestSnapshotTick < requiredTick) { allReady = false; break; }
+            }
+
+            if (allReady)
+            {
+                RecallAcknowledgedServerRpc(epoch);
+                _ackWatcherRoutine = null;
+                yield break;
+            }
+
+            yield return null;
+        }
     }
 
     [ClientRpc]
@@ -171,6 +287,12 @@ public class MeatballCheckpointReturnManager : NetworkBehaviour
     {
         for (int i = 0; i < SpaghettiRenderer.Instances.Count; i++)
             SpaghettiRenderer.Instances[i]?.EndChainRebuild();
+
+        if (_ackWatcherRoutine != null)
+        {
+            StopCoroutine(_ackWatcherRoutine);
+            _ackWatcherRoutine = null;
+        }
     }
 
     private List<MeatballPhysicsController> GetSortedPlayers()
