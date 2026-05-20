@@ -862,8 +862,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuMeatballAnimationManager
   _checkInterval: 0.5
   _postRecallCooldown: 1
-  _maxDistanceFromCamera: 50
+  _maxDistanceFromCamera: 55
   _logRecalls: 0
+  _longRecallDistance: 45
+  _longRecallCooldownDuration: 6
 --- !u!1 &721179648
 GameObject:
   m_ObjectHideFlags: 0
@@ -1283,8 +1285,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 815091109}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.09840752, y: -0.7402042, z: 0.13842309, w: 0.65057886}
-  m_LocalPosition: {x: 584.6244, y: 30, z: -25.047161}
+  m_LocalRotation: {x: 0.098407395, y: -0.74020493, z: 0.13842289, w: 0.6505781}
+  m_LocalPosition: {x: 584.6244, y: 30, z: -25.047155}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3406,7 +3408,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TrampolineBounce_Debug
   bounceStrength: 60
-  bounceDirection: {x: 0.5, y: 1, z: 0}
+  bounceDirection: {x: -0.5, y: 0.5, z: 0}
   resetVelocityAlongBounceDirection: 1
   enableLogs: 1
   drawDebug: 1
