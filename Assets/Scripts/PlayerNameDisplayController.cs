@@ -7,11 +7,15 @@ using UnityEngine;
 public class PlayerNameDisplayController : MonoBehaviour
 {
     [SerializeField] GameObject _nameDisplayPrefab;
+    [SerializeField] bool _showNameplate = true;
 
     GameObject _displayInstance;
 
     void Start()
     {
+        if (!_showNameplate || GetComponent<TimelineDrivenMeatball>() != null)
+            return;
+
         if (_nameDisplayPrefab == null)
         {
             Debug.LogWarning("[PlayerNameDisplayController] No name display prefab assigned.", this);
