@@ -22,6 +22,13 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
     [SerializeField] QuickJoinSettings quickJoinSettings;
 
     IHostSession m_HostSession;
+    ISession m_ClientSession;
+
+    /// <summary>
+    /// Current lobby join code. Returns the host's session code when hosting,
+    /// or the joined session's code when a client. Null/empty if not in a session.
+    /// </summary>
+    public string JoinCode => m_HostSession?.Code ?? m_ClientSession?.Code;
 
     void Awake()
     {
@@ -60,10 +67,10 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
         await CreateSessionAsync();
 
         var skinObj = Instantiate(_playerSkinAssignmentPrefab);
-        skinObj.GetComponent<NetworkObject>().Spawn();
+        skinObj.GetComponent<NetworkObject>().Spawn(destroyWithScene: true);
 
         var nameObj = Instantiate(_playerNameAssignmentPrefab);
-        nameObj.GetComponent<NetworkObject>().Spawn();
+        nameObj.GetComponent<NetworkObject>().Spawn(destroyWithScene: true);
 
         StartCoroutine(HostPostInitCoroutine());
     }
@@ -101,9 +108,34 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
             ? sessionSettings.ToSessionOptions()
             : new SessionOptions();
 
-        _ = await MultiplayerService.Instance.MatchmakeSessionAsync(quickJoinOptions, sessionOptions);
+        m_ClientSession = await MultiplayerService.Instance.MatchmakeSessionAsync(quickJoinOptions, sessionOptions);
+        Debug.Log($"Joined session — id: {m_ClientSession.Id}, join code: {m_ClientSession.Code}");
 
         StartCoroutine(ClientPostJoinCoroutine());
+    }
+
+    public async Task LeaveSessionAsync()
+    {
+        try
+        {
+            if (m_HostSession != null)
+            {
+                await m_HostSession.LeaveAsync();
+                m_HostSession = null;
+            }
+            else if (m_ClientSession != null)
+            {
+                await m_ClientSession.LeaveAsync();
+                m_ClientSession = null;
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"LeaveSessionAsync failed: {e.Message}");
+        }
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            NetworkManager.Singleton.Shutdown();
     }
 
     private IEnumerator ClientPostJoinCoroutine()

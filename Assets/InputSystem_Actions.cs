@@ -421,6 +421,17 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""24dd5f95-f2e3-4052-a2e0-e0dd5d83e2a3"",
+                    ""path"": ""<Keyboard>/backquote"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Menu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""b7105992-778c-48be-96e6-6b00dc3622ff"",
                     ""path"": ""<Keyboard>/e"",
                     ""interactions"": """",

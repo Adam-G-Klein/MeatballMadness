@@ -11,8 +11,8 @@ using UnityEngine;
 ///         full current assignment map so late joiners catch up on all names
 ///         assigned before they connected.
 ///
-/// Spawn once after session creation (before the gameplay scene loads).
-/// DontDestroyOnLoad keeps the singleton alive across the scene transition.
+/// Spawn once per session, inside the gameplay scene. Dies with the scene
+/// on quit-to-menu so a re-host doesn't accumulate stale duplicates.
 /// </summary>
 public class PlayerNameAssignment : NetworkBehaviour
 {
@@ -40,7 +40,6 @@ public class PlayerNameAssignment : NetworkBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     public override void OnNetworkSpawn()

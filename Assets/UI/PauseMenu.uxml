@@ -1,0 +1,61 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/PauseMenu.uss?fileID=7433441132597879392&amp;guid=6b8c2d3e4a5f6071c2d3e4a5f6071082&amp;type=3#PauseMenu"/>
+    <ui:VisualElement name="pause-root" class="pause-root hidden">
+        <ui:VisualElement name="pause-main-view" class="pause-main-view">
+            <ui:VisualElement name="pause-controls-view" class="pause-panel">
+                <ui:Label text="Controls" class="join-code-title"/>
+                <ui:VisualElement name="controls-panel" class="controls-panel">
+                    <ui:VisualElement class="controls-row">
+                        <ui:Label text="WASD" class="controls-key"/>
+                        <ui:Label text="Move" class="controls-action"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="controls-row">
+                        <ui:Label text="Space" class="controls-key"/>
+                        <ui:Label text="Jump" class="controls-action"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="controls-row">
+                        <ui:Label text="L-Shift" class="controls-key"/>
+                        <ui:Label text="Sprint" class="controls-action"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="controls-row">
+                        <ui:Label text="R" class="controls-key"/>
+                        <ui:Label text="Respawn" class="controls-action"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="controls-row">
+                        <ui:Label text="E" class="controls-key"/>
+                        <ui:Label text="Slurp" class="controls-action"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="pause-buttons-panel" class="pause-panel">
+                <ui:Label name="join-code-label" text="Join Code: ---" class="join-code-title"/>
+                <ui:Button text="Back To Meatballin!" name="resume-button" class="primary-button"/>
+                <ui:Button text="Options" name="more-options-button" class="primary-button"/>
+                <ui:Button text="Quit To Menu" name="quit-to-menu-button" class="primary-button"/>
+                <ui:Button text="Quit To Desktop" name="quit-to-desktop-button" class="primary-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="pause-options-view" class="pause-panel hidden" style="padding-top: 64px; padding-bottom: 64px;">
+            <ui:Label text="Options" class="join-code-title"/>
+            <ui:VisualElement class="slider-row">
+                <ui:Label text="SFX Volume" class="slider-label"/>
+                <ui:Slider name="sfx-volume-slider" low-value="0" high-value="100" value="100" class="primary-slider"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="slider-row">
+                <ui:Label text="Music Volume" class="slider-label"/>
+                <ui:Slider name="music-volume-slider" low-value="0" high-value="100" value="100" class="primary-slider"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="slider-row">
+                <ui:Label text="Look Sensitivity (Horizontal)" class="slider-label"/>
+                <ui:Slider name="sensitivity-h-slider" low-value="20" high-value="600" value="180" class="primary-slider"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="slider-row">
+                <ui:Label text="Look Sensitivity (Vertical)" class="slider-label"/>
+                <ui:Slider name="sensitivity-v-slider" low-value="20" high-value="600" value="120" class="primary-slider"/>
+            </ui:VisualElement>
+            <ui:Toggle name="fullscreen-toggle" label="Fullscreen" class="primary-toggle"/>
+            <ui:Toggle name="require-rmb-toggle" label="Require Right Mouse Button to Look" class="primary-toggle"/>
+            <ui:Button text="Back" name="options-back-button" class="primary-button"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

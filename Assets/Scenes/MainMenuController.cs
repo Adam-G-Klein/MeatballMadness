@@ -7,6 +7,7 @@ using UnityEngine.UIElements;
 public class MainMenuController : MonoBehaviour
 {
     QuickJoinViewModel m_QuickJoinViewModel;
+    VisualElement m_MainMenuView;
     Button m_HostBtn;
     Button m_JoinBtn;
     Button m_QuickJoinBtn;
@@ -14,6 +15,7 @@ public class MainMenuController : MonoBehaviour
     Button m_CreditsBtn;
     Button m_ExitBtn;
     Label m_QuickJoinStatusLabel;
+    JoinCodeView m_JoinCodeView;
 
     void OnEnable()
     {
@@ -25,6 +27,7 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
+        m_MainMenuView = root.Q<VisualElement>("main-menu-view");
         m_HostBtn = root.Q<Button>("host-session-button");
         m_JoinBtn = root.Q<Button>("join-session-button");
         m_QuickJoinBtn = root.Q<Button>("quick-join-session-button");
@@ -32,6 +35,8 @@ public class MainMenuController : MonoBehaviour
         m_CreditsBtn = root.Q<Button>("credits-button");
         m_ExitBtn = root.Q<Button>("exit-button");
         m_QuickJoinStatusLabel = root.Q<Label>("quick-join-status-label");
+
+        if (m_MainMenuView == null) Debug.LogError("MainMenuController: 'main-menu-view' not found.");
 
         if (m_HostBtn == null) Debug.LogError("MainMenuController: 'host-session-button' not found.");
         else m_HostBtn.clicked += OnHostSession;
@@ -51,6 +56,15 @@ public class MainMenuController : MonoBehaviour
         if (m_ExitBtn == null) Debug.LogError("MainMenuController: 'exit-button' not found.");
         else m_ExitBtn.clicked += OnExit;
 
+        m_JoinCodeView = new JoinCodeView(root);
+        m_JoinCodeView.Submitted += OnJoinCodeSubmitted;
+        m_JoinCodeView.BackPressed += OnJoinCodeBack;
+
+        UnityEngine.Cursor.visible = true;
+        UnityEngine.Cursor.lockState = CursorLockMode.None;
+
+        ShowMainMenu();
+
         m_QuickJoinViewModel = new QuickJoinViewModel(null);
     }
 
@@ -63,8 +77,17 @@ public class MainMenuController : MonoBehaviour
         if (m_CreditsBtn != null) m_CreditsBtn.clicked -= OnCredits;
         if (m_ExitBtn != null) m_ExitBtn.clicked -= OnExit;
 
+        if (m_JoinCodeView != null)
+        {
+            m_JoinCodeView.Submitted -= OnJoinCodeSubmitted;
+            m_JoinCodeView.BackPressed -= OnJoinCodeBack;
+            m_JoinCodeView.Dispose();
+            m_JoinCodeView = null;
+        }
+
         m_QuickJoinViewModel?.Dispose();
         m_QuickJoinViewModel = null;
+        m_MainMenuView = null;
         m_HostBtn = null;
         m_JoinBtn = null;
         m_QuickJoinBtn = null;
@@ -74,6 +97,18 @@ public class MainMenuController : MonoBehaviour
         m_QuickJoinStatusLabel = null;
     }
 
+    void ShowMainMenu()
+    {
+        if (m_MainMenuView != null) m_MainMenuView.style.display = DisplayStyle.Flex;
+        m_JoinCodeView?.Hide();
+    }
+
+    void ShowJoinCodeMenu()
+    {
+        if (m_MainMenuView != null) m_MainMenuView.style.display = DisplayStyle.None;
+        m_JoinCodeView?.Show();
+    }
+
     void OnHostSession()
     {
         MeatballMultiplayerSessionManager.Instance.StartHostFlow();
@@ -81,7 +116,7 @@ public class MainMenuController : MonoBehaviour
 
     void OnJoinSession()
     {
-        Debug.Log("MainMenuController: Join game pressed (not wired up yet).");
+        ShowJoinCodeMenu();
     }
 
     void OnQuickJoinSession()
@@ -106,6 +141,16 @@ public class MainMenuController : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    void OnJoinCodeSubmitted(string code)
+    {
+        // no-op for now
+    }
+
+    void OnJoinCodeBack()
+    {
+        ShowMainMenu();
     }
 
     async Task QuickJoinAsync()

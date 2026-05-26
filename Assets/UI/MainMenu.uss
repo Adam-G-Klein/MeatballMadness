@@ -78,3 +78,36 @@
     color: rgb(255, 255, 255);
     -unity-text-align: middle-left;
 }
+
+.hidden {
+    display: none;
+}
+
+.primary-label,
+.primary-input {
+    min-width: 380px;
+    margin: 0 0 14px 0;
+    padding: 14px 28px;
+    font-size: 32px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.72);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0);
+    border-radius: 24px;
+    -unity-text-align: middle-left;
+}
+
+.primary-input > .unity-text-field__input {
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    padding: 0;
+    margin: 0;
+    color: rgb(255, 255, 255);
+    font-size: 32px;
+    -unity-text-align: middle-left;
+    --unity-cursor-color: rgb(255, 255, 255);
+}
+
+.primary-input:focus {
+    border-color: rgb(255, 255, 255);
+}

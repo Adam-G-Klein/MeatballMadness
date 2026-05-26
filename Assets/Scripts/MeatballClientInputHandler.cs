@@ -63,21 +63,24 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         bool emote = _emoteLatched;
         _emoteLatched = false;
 
-        if (_rawMove.sqrMagnitude > 0.001f)
+        bool gameplayInputGated = PauseMenuController.IsPaused;
+
+        if (_rawMove.sqrMagnitude > 0.001f && !gameplayInputGated)
         {
             Debug.Log("[MeatballClientInputHandler] _rawMove is non-zero:", this);
         }
-   
 
-        var frame = new InputFrame
-        {
-            tick = tick,
-            move = ToCameraRelativeInput(_rawMove),
-            jump = jump,
-            sprint = _sprintHeld,
-            reel = _reelHeld,
-            emote = emote,
-        };
+        var frame = gameplayInputGated
+            ? new InputFrame { tick = tick, move = Vector2.zero, jump = false, sprint = false, reel = false, emote = false }
+            : new InputFrame
+            {
+                tick = tick,
+                move = ToCameraRelativeInput(_rawMove),
+                jump = jump,
+                sprint = _sprintHeld,
+                reel = _reelHeld,
+                emote = emote,
+            };
 
         _dispatcher.EmitOwnerFrame(frame);
     }

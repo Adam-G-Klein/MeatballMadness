@@ -2,7 +2,7 @@
     <Style src="project://database/Assets/UI/MainMenu.uss" />
     <ui:VisualElement name="menu-root" class="menu-root">
         <ui:VisualElement name="logo-slot" class="logo-slot" />
-        <ui:VisualElement name="button-stack" class="button-stack">
+        <ui:VisualElement name="main-menu-view" class="button-stack">
             <ui:Button text="Host game" name="host-session-button" class="primary-button" />
             <ui:Button text="Join game" name="join-session-button" class="primary-button" />
             <ui:Button text="Join random game" name="quick-join-session-button" class="primary-button" />
@@ -12,6 +12,14 @@
                 <ui:Button text="Exit" name="exit-button" class="secondary-button" />
             </ui:VisualElement>
             <ui:Label name="quick-join-status-label" text="" class="status-label" />
+        </ui:VisualElement>
+        <ui:VisualElement name="join-code-view" class="button-stack hidden">
+            <ui:Label text="Enter Join Code" name="join-code-label" class="primary-label" />
+            <ui:TextField name="join-code-field" label="" class="primary-input" />
+            <ui:VisualElement name="join-code-row" class="secondary-row">
+                <ui:Button text="Back" name="join-code-back-button" class="secondary-button" />
+                <ui:Button text="Submit" name="join-code-submit-button" class="secondary-button" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -139,7 +139,8 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
         if (_target == null)
             return;
 
-        HandleScrollZoom();
+        if (!PauseMenuController.IsPaused)
+            HandleScrollZoom();
 
         Vector3 targetPos = _target.position + Vector3.up * _pivotHeightOffset;
 
@@ -163,6 +164,9 @@ public class MeatballOrbitCamera : MonoBehaviour, InputSystem_Actions.IPlayerAct
         }
 
         Vector2 effectiveLook = _lookInput;
+
+        if (PauseMenuController.IsPaused)
+            effectiveLook = Vector2.zero;
 
         if (_requireRightMouseButtonToRotate)
         {

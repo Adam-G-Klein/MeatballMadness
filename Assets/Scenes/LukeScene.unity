@@ -2201,6 +2201,7 @@ GameObject:
   - component: {fileID: 552266391}
   - component: {fileID: 552266390}
   - component: {fileID: 552266392}
+  - component: {fileID: 552266393}
   m_Layer: 0
   m_Name: UIDocument
   m_TagString: Untagged
@@ -2222,7 +2223,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
   m_PanelSettings: {fileID: 11400000, guid: a50c3dac7c8ff87458d7c72ab9d56989, type: 2}
   m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: 8553df38c672e1846a5cf0f542244943, type: 3}
+  sourceAsset: {fileID: 9197481963319205126, guid: 7a9c1d2e3b4f5a608c1d2e3b4f5a6071, type: 3}
   m_SortingOrder: 0
   m_Position: 0
   m_WorldSpaceSizeMode: 1
@@ -2260,6 +2261,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUDController
   mainMenuSceneName: MainMenu
   returnToMenuDelay: 5
+--- !u!114 &552266393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 552266389}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d5e6f708192a3b4c5d6e7f80a1b2c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PauseMenuController
+  mainMenuSceneName: MainMenu
+  orbitCamera: {fileID: 308134695}
+  audioMixer: {fileID: 24100000, guid: f54d0b9ed3a199c43bdadb268588d4ea, type: 2}
+  musicVolumeParam: MusicVolume
+  sfxVolumeParam: SFXVolume
+  startFullscreen: 1
 --- !u!1 &555691437
 GameObject:
   m_ObjectHideFlags: 0
@@ -2984,17 +3003,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85c6769b314a249fba4dd433da62cc04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeatballDebugger
-  toggleDebuggerKey: 5
-  toggleUIKey: 34
-  controlsHUD: {fileID: 552266390}
-  orbitCamera: {fileID: 308134695}
-  sensitivityStep: 10
-  minSensitivity: 5
-  maxSensitivity: 600
-  musicObject: {fileID: 987475004}
-  musicSource: {fileID: 987475005}
-  startFullscreen: 1
-  showDebuggerOnStart: 1
 --- !u!4 &790065970
 Transform:
   m_ObjectHideFlags: 0
@@ -8950,7 +8958,7 @@ AudioSource:
   m_GameObject: {fileID: 987475004}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 603888438603303310, guid: f54d0b9ed3a199c43bdadb268588d4ea, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: d88936080ce1447ec82632f759b9f3df, type: 3}
   m_PlayOnAwake: 1

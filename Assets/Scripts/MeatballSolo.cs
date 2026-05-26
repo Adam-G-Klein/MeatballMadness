@@ -112,6 +112,13 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         EnqueueSnapshot();
         DrainDelayedInput(out Vector2 moveInput, out bool jumpQueued, out bool sprintHeld);
 
+        if (PauseMenuController.IsPaused)
+        {
+            moveInput = Vector2.zero;
+            jumpQueued = false;
+            sprintHeld = false;
+        }
+
         ApplyMovement(moveInput, sprintHeld);
 
         if (jumpQueued)

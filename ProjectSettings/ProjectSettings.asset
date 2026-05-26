@@ -14,7 +14,7 @@ PlayerSettings:
   accelerometerFrequency: 60
   companyName: DefaultCompany
   productName: WeBeMeatballin
-  defaultCursor: {fileID: 0}
+  defaultCursor: {fileID: 2800000, guid: c88fdba2ed8fda3408b1b03031975e45, type: 3}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
   m_ShowUnitySplashScreen: 1
