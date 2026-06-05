@@ -84,7 +84,9 @@ public class LevelVictoryZone : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        _state.OnValueChanged += OnStateChanged;
+        // Apply the current state immediately. Live updates arrive via UpdateZoneColorClientRpc,
+        // but that only reaches clients already connected when the host broadcasts it — a late
+        // joiner reads the replicated NetworkVariable here to catch up to the current colour.
         ApplyStateVisual(_state.Value);
 
         if (IsServer)
@@ -100,8 +102,6 @@ public class LevelVictoryZone : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
-        _state.OnValueChanged -= OnStateChanged;
-
         if (IsServer)
         {
             MeatballPhysicsController.OnMeatballSpawned -= OnRosterChanged;
@@ -168,7 +168,14 @@ public class LevelVictoryZone : NetworkBehaviour
         else
             next = VictoryState.Yellow;
 
+        if (next == _state.Value)
+            return;
+
+        // Record the canonical state (replicated so late joiners can read it), then tell every
+        // connected client to update its colour locally. The host receives this ClientRpc too,
+        // so the host's own visual updates through the same path.
         _state.Value = next;
+        UpdateZoneColorClientRpc(next);
 
         if (next == VictoryState.Green)
             DeclareVictory();
@@ -184,9 +191,10 @@ public class LevelVictoryZone : NetworkBehaviour
         DeclareVictoryClientRpc();
     }
 
-    private void OnStateChanged(VictoryState previous, VictoryState current)
+    [ClientRpc]
+    private void UpdateZoneColorClientRpc(VictoryState state)
     {
-        ApplyStateVisual(current);
+        ApplyStateVisual(state);
     }
 
     private void ApplyStateVisual(VictoryState state)
