@@ -1,3 +1,4 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,6 +17,19 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(NetworkObject), typeof(MeatballInputDispatcher))]
 public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.IPlayerActions
 {
+    /// <summary>
+    /// Fired on the local machine the moment the locally-owned meatball finishes
+    /// network-spawning. Used by the loading screen to know when gameplay is ready.
+    /// </summary>
+    public static event Action LocalMeatballSpawned;
+
+    /// <summary>
+    /// True once the locally-owned meatball has spawned this session. Reset when it
+    /// despawns (e.g. leaving back to the menu) so a stale value can't trip a fresh
+    /// scene load. Lets late subscribers catch up if they missed the event.
+    /// </summary>
+    public static bool HasLocalMeatballSpawned { get; private set; }
+
     private InputSystem_Actions _actions;
     private MeatballInputDispatcher _dispatcher;
 
@@ -43,10 +57,16 @@ public class MeatballClientInputHandler : NetworkBehaviour, InputSystem_Actions.
         _actions.Player.Enable();
         enabled = true;
         Debug.Log($"[MeatballInput] Owner input enabled (clientId={NetworkManager.LocalClientId}).");
+
+        HasLocalMeatballSpawned = true;
+        LocalMeatballSpawned?.Invoke();
     }
 
     public override void OnNetworkDespawn()
     {
+        if (IsOwner)
+            HasLocalMeatballSpawned = false;
+
         if (_actions == null) return;
         _actions.Player.RemoveCallbacks(this);
         _actions.Player.Disable();
