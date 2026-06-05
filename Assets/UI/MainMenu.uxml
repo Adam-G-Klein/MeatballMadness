@@ -20,6 +20,7 @@
                 <ui:Button text="Back" name="join-code-back-button" class="secondary-button" />
                 <ui:Button text="Submit" name="join-code-submit-button" class="secondary-button" />
             </ui:VisualElement>
+            <ui:Label name="join-code-status-label" text="" class="status-label" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

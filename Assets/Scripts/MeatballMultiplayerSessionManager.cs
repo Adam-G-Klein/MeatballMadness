@@ -114,6 +114,23 @@ public class MeatballMultiplayerSessionManager : MonoBehaviour
         StartCoroutine(ClientPostJoinCoroutine());
     }
 
+    /// <summary>
+    /// Joins an existing session using the supplied join code. Mirrors <see cref="QuickJoinAsync"/>:
+    /// joining the session establishes the NGO client connection, and the host's scene
+    /// synchronization brings this client into LukeScene — no explicit scene load is needed here.
+    /// </summary>
+    public async Task JoinByCodeAsync(string code)
+    {
+        var joinSessionOptions = sessionSettings != null
+            ? sessionSettings.ToJoinSessionOptions()
+            : new JoinSessionOptions();
+
+        m_ClientSession = await MultiplayerService.Instance.JoinSessionByCodeAsync(code, joinSessionOptions);
+        Debug.Log($"Joined session by code — id: {m_ClientSession.Id}, join code: {m_ClientSession.Code}");
+
+        StartCoroutine(ClientPostJoinCoroutine());
+    }
+
     public async Task LeaveSessionAsync()
     {
         try

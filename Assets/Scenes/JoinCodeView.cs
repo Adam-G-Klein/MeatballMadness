@@ -7,6 +7,7 @@ public class JoinCodeView
     readonly TextField m_CodeField;
     readonly Button m_SubmitBtn;
     readonly Button m_BackBtn;
+    readonly Label m_StatusLabel;
 
     public event Action<string> Submitted;
     public event Action BackPressed;
@@ -17,6 +18,7 @@ public class JoinCodeView
         m_CodeField = m_Root.Q<TextField>("join-code-field");
         m_SubmitBtn = m_Root.Q<Button>("join-code-submit-button");
         m_BackBtn = m_Root.Q<Button>("join-code-back-button");
+        m_StatusLabel = m_Root.Q<Label>("join-code-status-label");
 
         m_SubmitBtn.clicked += OnSubmit;
         m_BackBtn.clicked += OnBack;
@@ -28,7 +30,19 @@ public class JoinCodeView
     {
         m_Root.style.display = DisplayStyle.Flex;
         m_CodeField.SetValueWithoutNotify(string.Empty);
+        SetStatus(string.Empty);
+        SetSubmitEnabled(true);
         m_CodeField.Focus();
+    }
+
+    public void SetStatus(string text)
+    {
+        if (m_StatusLabel != null) m_StatusLabel.text = text;
+    }
+
+    public void SetSubmitEnabled(bool enabled)
+    {
+        m_SubmitBtn?.SetEnabled(enabled);
     }
 
     public void Hide()

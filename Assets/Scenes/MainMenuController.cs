@@ -145,7 +145,7 @@ public class MainMenuController : MonoBehaviour
 
     void OnJoinCodeSubmitted(string code)
     {
-        // no-op for now
+        _ = JoinByCodeAsync(code);
     }
 
     void OnJoinCodeBack()
@@ -167,6 +167,29 @@ public class MainMenuController : MonoBehaviour
         {
             m_QuickJoinStatusLabel.text = $"Failed: {e.Message}";
             m_QuickJoinBtn.SetEnabled(true);
+        }
+    }
+
+    async Task JoinByCodeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            m_JoinCodeView?.SetStatus("Enter a join code.");
+            return;
+        }
+
+        m_JoinCodeView?.SetSubmitEnabled(false);
+        m_JoinCodeView?.SetStatus("Joining session...");
+
+        try
+        {
+            await MeatballMultiplayerSessionManager.Instance.JoinByCodeAsync(code.Trim());
+            m_JoinCodeView?.SetStatus("Joined!");
+        }
+        catch (System.Exception e)
+        {
+            m_JoinCodeView?.SetStatus($"Failed: {e.Message}");
+            m_JoinCodeView?.SetSubmitEnabled(true);
         }
     }
 }
