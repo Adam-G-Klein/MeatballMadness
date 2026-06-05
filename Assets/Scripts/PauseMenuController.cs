@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.InputSystem;
@@ -47,7 +48,15 @@ public class PauseMenuController : MonoBehaviour, InputSystem_Actions.IPlayerAct
     Toggle _requireRmbToggle;
     Button _optionsBackBtn;
 
+    HostDisconnectView _hostDisconnectView;
+
     bool _isOpen;
+
+    /// <summary>Set once the host has left; locks out the pause toggle so only the disconnect screen shows.</summary>
+    bool _hostDisconnected;
+
+    /// <summary>Set when the local player is deliberately leaving, so the disconnect screen isn't shown for our own shutdown.</summary>
+    bool _leavingIntentionally;
 
     void Awake()
     {
@@ -135,6 +144,12 @@ public class PauseMenuController : MonoBehaviour, InputSystem_Actions.IPlayerAct
             _requireRmbToggle.RegisterValueChangedCallback(OnRequireRmbChanged);
         }
 
+        _hostDisconnectView = new HostDisconnectView(_root);
+        _hostDisconnectView.ReturnToMenu += OnDisconnectReturnToMenu;
+
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientDisconnectCallback += OnNetworkClientDisconnect;
+
         HidePause();
         _player.Enable();
     }
@@ -155,6 +170,15 @@ public class PauseMenuController : MonoBehaviour, InputSystem_Actions.IPlayerAct
         if (_sensVSlider != null) _sensVSlider.UnregisterValueChangedCallback(OnSensVChanged);
         if (_fullscreenToggle != null) _fullscreenToggle.UnregisterValueChangedCallback(OnFullscreenChanged);
         if (_requireRmbToggle != null) _requireRmbToggle.UnregisterValueChangedCallback(OnRequireRmbChanged);
+
+        if (NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientDisconnectCallback -= OnNetworkClientDisconnect;
+
+        if (_hostDisconnectView != null)
+        {
+            _hostDisconnectView.ReturnToMenu -= OnDisconnectReturnToMenu;
+            _hostDisconnectView.Dispose();
+        }
     }
 
     void OnDestroy()
@@ -165,6 +189,7 @@ public class PauseMenuController : MonoBehaviour, InputSystem_Actions.IPlayerAct
     public void OnMenu(InputAction.CallbackContext context)
     {
         if (!context.performed) return;
+        if (_hostDisconnected) return;
         if (_isOpen) HidePause();
         else ShowMainPause();
     }
@@ -222,7 +247,50 @@ public class PauseMenuController : MonoBehaviour, InputSystem_Actions.IPlayerAct
 
     async void OnQuitToMenu()
     {
+        _leavingIntentionally = true;
         HidePause();
+        if (MeatballMultiplayerSessionManager.Instance != null)
+            await MeatballMultiplayerSessionManager.Instance.LeaveSessionAsync();
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    /// <summary>
+    /// Fires on a client when its connection to the host drops. NGO has no host
+    /// migration, so when the host leaves the session is dead — surface the
+    /// "host left" screen so the player can bail back to the main menu.
+    /// </summary>
+    void OnNetworkClientDisconnect(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || _leavingIntentionally || _hostDisconnected) return;
+
+        // The host/server never shows this screen (a peer leaving is normal);
+        // only a client that lost its own link to the host does.
+        if (nm.IsServer) return;
+        if (clientId != nm.LocalClientId) return;
+
+        ShowHostDisconnect();
+    }
+
+    void ShowHostDisconnect()
+    {
+        if (_root == null) return;
+        _hostDisconnected = true;
+        _isOpen = false;
+        IsPaused = true;
+        SetCursorVisible(true);
+        _root.RemoveFromClassList("hidden");
+        if (_mainView != null) _mainView.style.display = DisplayStyle.None;
+        if (_optionsView != null) _optionsView.style.display = DisplayStyle.None;
+        _hostDisconnectView?.Show();
+    }
+
+    async void OnDisconnectReturnToMenu()
+    {
+        _leavingIntentionally = true;
+        _hostDisconnectView?.Hide();
+        if (_root != null) _root.AddToClassList("hidden");
+        IsPaused = false;
         if (MeatballMultiplayerSessionManager.Instance != null)
             await MeatballMultiplayerSessionManager.Instance.LeaveSessionAsync();
         SceneManager.LoadScene(mainMenuSceneName);

@@ -57,5 +57,9 @@
             <ui:Toggle name="require-rmb-toggle" label="Require Right Mouse Button to Look" class="primary-toggle"/>
             <ui:Button text="Back" name="options-back-button" class="primary-button"/>
         </ui:VisualElement>
+        <ui:VisualElement name="host-disconnect-view" class="pause-panel hidden" style="padding-top: 64px; padding-bottom: 64px;">
+            <ui:Label text="The Host Left The Game" class="join-code-title"/>
+            <ui:Button text="Return To Main Menu" name="host-disconnect-menu-button" class="primary-button"/>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
