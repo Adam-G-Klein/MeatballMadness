@@ -755,81 +755,9 @@ PrefabInstance:
       propertyPath: SceneMigrationSynchronization
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1383785273652897530, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_Mass
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2084660882317201553, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_Radius
-      value: 0.85376537
-      objectReference: {fileID: 0}
-    - target: {fileID: 2084660882317201553, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_Center.x
-      value: 0.016382337
-      objectReference: {fileID: 0}
-    - target: {fileID: 2084660882317201553, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_Center.z
-      value: -0.04000002
-      objectReference: {fileID: 0}
-    - target: {fileID: 2084660882317201553, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_Material
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 2644544454210883241, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_TagString
-      value: Player
-      objectReference: {fileID: 0}
     - target: {fileID: 3855724328833214847, guid: 927d782f622a849469be17c931c3176b, type: 3}
       propertyPath: m_Name
       value: DebugPlayerMeatball
-      objectReference: {fileID: 0}
-    - target: {fileID: 3855724328833214847, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3855724328833214847, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: m_TagString
-      value: Player
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _moveForce
-      value: 80
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _linearDrag
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _angularDrag
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _jumpImpulse
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _staticFriction
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _dynamicFriction
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _airControlFraction
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _maxHorizontalSpeed
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _simulatedLatencyMs
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6286035981066199520, guid: 927d782f622a849469be17c931c3176b, type: 3}
-      propertyPath: _maxRunHorizontalSpeed
-      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 9039742418039606894, guid: 927d782f622a849469be17c931c3176b, type: 3}
       propertyPath: m_LocalPosition.x
@@ -874,7 +802,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2644544454210883241, guid: 927d782f622a849469be17c931c3176b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 403516767}
   m_SourcePrefab: {fileID: 100100000, guid: 927d782f622a849469be17c931c3176b, type: 3}
 --- !u!1 &198583878
 GameObject:
@@ -1565,6 +1496,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 838596925}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &403516748 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2644544454210883241, guid: 927d782f622a849469be17c931c3176b, type: 3}
+  m_PrefabInstance: {fileID: 172936522}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &403516767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 403516748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 747531569a585cd48a82560a43e2d9a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeatballSolo
+  _settings: {fileID: 11400000, guid: 54d9d1d1842e7dd4fb1fbb834545123e, type: 2}
+  _cameraTransform: {fileID: 308134694}
 --- !u!1001 &438786448
 PrefabInstance:
   m_ObjectHideFlags: 0

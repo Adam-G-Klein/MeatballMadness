@@ -68,6 +68,7 @@ public class MeatballSolo : MonoBehaviour, InputSystem_Actions.IPlayerActions
         _actions = new InputSystem_Actions();
         _player = _actions.Player;
         _player.AddCallbacks(this);
+        GetComponent<MeatballInputDispatcher>().IsTimelineDriven = true;
     }
 
     void OnEnable()

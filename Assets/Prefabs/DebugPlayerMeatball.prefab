@@ -41,28 +41,12 @@ PrefabInstance:
     m_TransformParent: {fileID: 9039742418039606894}
     m_Modifications:
     - target: {fileID: 438016312355362814, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 438016312355362814, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 1518334525
-      objectReference: {fileID: 0}
-    - target: {fileID: 634866817322400418, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1238535911029876582, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: m_Name
       value: PlayerMeatball
-      objectReference: {fileID: 0}
-    - target: {fileID: 3367403616109244128, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -107,30 +91,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6286035981066199520}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
---- !u!1 &2644544454210883241 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3141278423515096476, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
-  m_PrefabInstance: {fileID: 1093072055799081781}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &6286035981066199520
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2644544454210883241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 747531569a585cd48a82560a43e2d9a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeatballSolo
-  _settings: {fileID: 11400000, guid: 54d9d1d1842e7dd4fb1fbb834545123e, type: 2}
-  _cameraTransform: {fileID: 0}
 --- !u!4 &7361531273708996786 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7566670311535797127, guid: 7023834a4b6c67a4daf4011ff0a7282f, type: 3}
