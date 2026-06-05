@@ -1,9 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 /// <summary>
 /// A level goal volume. Players must all gather inside the box-collider zone to win.
@@ -18,8 +15,8 @@ using UnityEngine.SceneManagement;
 /// sync. The mesh renderer's colour is driven from the current state by setting the
 /// "_ZoneColor" property on the material (see Assets/Shaders/VictoryZone.shader).
 ///
-/// On victory the host fires <see cref="DeclareVictoryClientRpc"/>, which kicks every
-/// machine (host included) back to the main menu.
+/// On victory the host fires <see cref="DeclareVictoryClientRpc"/>, which shows the shared
+/// "Victory!" overlay (<see cref="VictoryScreenController"/>) on every machine.
 ///
 /// Setup:
 /// 1. Create an empty GameObject in the level scene.
@@ -48,10 +45,6 @@ public class LevelVictoryZone : NetworkBehaviour
     [Tooltip("Colour shown when every player is inside the zone (victory).")]
     [SerializeField] private Color _greenColor = new Color(0.2f, 0.85f, 0.25f, 1f);
 
-    [Header("Victory Flow")]
-    [Tooltip("Scene loaded for everyone when victory is declared.")]
-    [SerializeField] private string _mainMenuSceneName = "MainMenu";
-
     // Material property the shader reads its colour from.
     private static readonly int ZoneColorId = Shader.PropertyToID("_ZoneColor");
 
@@ -64,7 +57,7 @@ public class LevelVictoryZone : NetworkBehaviour
 
     private Material _material;
     private bool _victoryDeclared;
-    private bool _returningToMenu;
+    private bool _victoryShown;
 
     private void Awake()
     {
@@ -215,29 +208,16 @@ public class LevelVictoryZone : NetworkBehaviour
     [ClientRpc]
     private void DeclareVictoryClientRpc()
     {
-        if (_returningToMenu)
+        if (_victoryShown)
             return;
 
-        _returningToMenu = true;
-        StartCoroutine(ReturnToMainMenuRoutine());
-    }
+        _victoryShown = true;
 
-    private IEnumerator ReturnToMainMenuRoutine()
-    {
-        // Wait for end of frame so NGO flushes this RPC to every remote client before the
-        // host tears the session down (a shutdown mid-frame would drop the message).
-        yield return new WaitForEndOfFrame();
-
-        if (MeatballMultiplayerSessionManager.Instance != null)
-        {
-            Task leave = MeatballMultiplayerSessionManager.Instance.LeaveSessionAsync();
-            yield return new WaitUntil(() => leave.IsCompleted);
-        }
-        else if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-        {
-            NetworkManager.Singleton.Shutdown();
-        }
-
-        SceneManager.LoadScene(_mainMenuSceneName);
+        // Reveal the shared Victory! overlay on this machine. The screen's own button drives
+        // the return to the main menu (see VictoryScreenController).
+        if (VictoryScreenController.Instance != null)
+            VictoryScreenController.Instance.Show();
+        else
+            Debug.LogWarning("[LevelVictoryZone] No VictoryScreenController in scene to show the victory screen.");
     }
 }
