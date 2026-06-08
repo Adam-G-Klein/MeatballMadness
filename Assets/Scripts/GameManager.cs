@@ -4,14 +4,21 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Attach to the NetworkManager GameObject.
-/// Enables connection approval and assigns each connecting player a spawn point
-/// in order — index 0 for the host, index 1 for the joining client.
+/// Enables connection approval and spawns each remote client that joins the
+/// lobby at the host player's exact world location, offset along Y so the
+/// joiner appears above the host. The host itself spawns at a configured base
+/// position, since there is no host player to offset from when it connects.
 /// </summary>
 public class GameManager : MonoBehaviour, InputSystem_Actions.IPlayerActions
 {
-    [SerializeField] private Transform[] _spawnPoints;
+    [Tooltip("Offset added to the host's world position along Y so joining " +
+             "clients spawn above the host player.")]
+    [SerializeField] private float _spawnYOffset = 2f;
 
-    private int _nextSpawnIndex;
+    [Tooltip("Position used for the very first player (the host itself), since " +
+             "there is no existing host player to offset from yet.")]
+    [SerializeField] private Vector3 _hostSpawnPosition = Vector3.zero;
+
     private InputSystem_Actions _actions;
 
     void Awake()
@@ -43,13 +50,44 @@ public class GameManager : MonoBehaviour, InputSystem_Actions.IPlayerActions
         response.Approved = true;
         response.CreatePlayerObject = true;
 
-        if (_spawnPoints != null && _spawnPoints.Length > 0)
+        // The host connects first and has no host player to offset from yet —
+        // place it at the configured base spawn position.
+        if (!TryGetHostPlayerTransform(out Vector3 hostPosition, out Quaternion hostRotation))
         {
-            int index = _nextSpawnIndex % _spawnPoints.Length;
-            response.Position = _spawnPoints[index].position;
-            response.Rotation = _spawnPoints[index].rotation;
-            _nextSpawnIndex++;
+            response.Position = _hostSpawnPosition;
+            response.Rotation = Quaternion.identity;
+            return;
         }
+
+        // Remote client: spawn at the host player's exact world location, lifted
+        // along Y so it appears above the host.
+        response.Position = hostPosition + new Vector3(0f, _spawnYOffset, 0f);
+        response.Rotation = hostRotation;
+    }
+
+    /// <summary>
+    /// Reads the host player object's world position/rotation. Returns false when
+    /// the host player has not spawned yet (e.g. the host's own connection).
+    /// </summary>
+    private bool TryGetHostPlayerTransform(out Vector3 position, out Quaternion rotation)
+    {
+        position = Vector3.zero;
+        rotation = Quaternion.identity;
+
+        var nm = NetworkManager.Singleton;
+        if (nm == null)
+            return false;
+
+        if (!nm.ConnectedClients.TryGetValue(NetworkManager.ServerClientId, out var hostClient))
+            return false;
+
+        if (hostClient.PlayerObject == null)
+            return false;
+
+        var hostTransform = hostClient.PlayerObject.transform;
+        position = hostTransform.position;
+        rotation = hostTransform.rotation;
+        return true;
     }
 
     private void OnDestroy()
