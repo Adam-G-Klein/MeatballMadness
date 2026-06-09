@@ -20,6 +20,11 @@ public class PlayerSkinAssignment : NetworkBehaviour
     public static PlayerSkinAssignment Instance { get; private set; }
 
     private readonly Dictionary<ulong, int> _skinMap = new();
+
+    // Indices freed by players who left, sorted ascending. Handed out before
+    // _nextIndex so a departing player's skin is recycled by the next joiner
+    // instead of advancing the normal assignment order. Server-only.
+    private readonly List<int> _freedIndices = new();
     private int _nextIndex;
     private bool _initialized;
 
@@ -37,12 +42,19 @@ public class PlayerSkinAssignment : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         _skinMap.Clear();
+        _freedIndices.Clear();
         _nextIndex = 0;
         _initialized = false;
+
+        if (IsServer && NetworkManager != null)
+            NetworkManager.OnClientDisconnectCallback += HandleClientDisconnect;
     }
 
     public override void OnNetworkDespawn()
     {
+        if (IsServer && NetworkManager != null)
+            NetworkManager.OnClientDisconnectCallback -= HandleClientDisconnect;
+
         if (Instance == this)
             Instance = null;
     }
@@ -63,7 +75,7 @@ public class PlayerSkinAssignment : NetworkBehaviour
 
         if (IsServer)
         {
-            _skinMap[NetworkManager.LocalClientId] = _nextIndex++;
+            _skinMap[NetworkManager.LocalClientId] = NextSkinIndex();
             _initialized = true;
             yield break;
         }
@@ -79,6 +91,39 @@ public class PlayerSkinAssignment : NetworkBehaviour
     public bool HasSkinIndex(ulong clientId) => _skinMap.ContainsKey(clientId);
 
     // -------------------------------------------------------------------------
+    // Assignment (server-only)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns the lowest recycled index from a player who left, or the next
+    /// fresh index if none are pending. Server-only.
+    /// </summary>
+    private int NextSkinIndex()
+    {
+        if (_freedIndices.Count > 0)
+        {
+            int idx = _freedIndices[0];
+            _freedIndices.RemoveAt(0);
+            return idx;
+        }
+        return _nextIndex++;
+    }
+
+    private void HandleClientDisconnect(ulong clientId)
+    {
+        if (!_skinMap.TryGetValue(clientId, out int idx))
+            return;
+
+        _skinMap.Remove(clientId);
+
+        // Recycle the freed index, keeping the pool sorted ascending so the
+        // lowest available skin is handed to the next joiner.
+        int insert = _freedIndices.BinarySearch(idx);
+        if (insert < 0) insert = ~insert;
+        _freedIndices.Insert(insert, idx);
+    }
+
+    // -------------------------------------------------------------------------
     // Network messages
     // -------------------------------------------------------------------------
 
@@ -86,7 +131,7 @@ public class PlayerSkinAssignment : NetworkBehaviour
     private void RequestSkinIndexServerRpc(ServerRpcParams rpcParams = default)
     {
         ulong requesterId = rpcParams.Receive.SenderClientId;
-        _skinMap[requesterId] = _nextIndex++;
+        _skinMap[requesterId] = NextSkinIndex();
 
         // Build a snapshot of the full map so the requester catches up on all
         // assignments made before they connected (host self-assign, prior clients).

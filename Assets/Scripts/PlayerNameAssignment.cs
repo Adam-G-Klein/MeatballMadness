@@ -29,6 +29,11 @@ public class PlayerNameAssignment : NetworkBehaviour
 
     private readonly Dictionary<ulong, string> _nameMap = new();
     private readonly List<string> _availableNames = new();
+
+    // Names freed by players who left, in the order they departed. Handed out
+    // before a fresh random pick so a departing player's name is recycled by
+    // the next joiner instead of a new random draw. Server-only.
+    private readonly List<string> _recycledNames = new();
     private bool _initialized;
 
     void Awake()
@@ -51,11 +56,18 @@ public class PlayerNameAssignment : NetworkBehaviour
         {
             _availableNames.Clear();
             _availableNames.AddRange(NamePool);
+            _recycledNames.Clear();
+
+            if (NetworkManager != null)
+                NetworkManager.OnClientDisconnectCallback += HandleClientDisconnect;
         }
     }
 
     public override void OnNetworkDespawn()
     {
+        if (IsServer && NetworkManager != null)
+            NetworkManager.OnClientDisconnectCallback -= HandleClientDisconnect;
+
         if (Instance == this)
             Instance = null;
     }
@@ -98,16 +110,41 @@ public class PlayerNameAssignment : NetworkBehaviour
 
     private void AssignRandomName(ulong clientId)
     {
-        if (_availableNames.Count == 0)
+        string chosen;
+
+        // Recycle a departed player's name before drawing a fresh one, so a
+        // freed name is reused instead of a new random pick.
+        if (_recycledNames.Count > 0)
         {
-            Debug.LogWarning("[PlayerNameAssignment] Name pool exhausted; reusing full pool.");
-            _availableNames.AddRange(NamePool);
+            chosen = _recycledNames[0];
+            _recycledNames.RemoveAt(0);
+        }
+        else
+        {
+            if (_availableNames.Count == 0)
+            {
+                Debug.LogWarning("[PlayerNameAssignment] Name pool exhausted; reusing full pool.");
+                _availableNames.AddRange(NamePool);
+            }
+
+            int idx = Random.Range(0, _availableNames.Count);
+            chosen = _availableNames[idx];
+            _availableNames.RemoveAt(idx);
         }
 
-        int idx = Random.Range(0, _availableNames.Count);
-        string chosen = _availableNames[idx];
-        _availableNames.RemoveAt(idx);
         _nameMap[clientId] = chosen;
+    }
+
+    private void HandleClientDisconnect(ulong clientId)
+    {
+        if (!_nameMap.TryGetValue(clientId, out string name))
+            return;
+
+        _nameMap.Remove(clientId);
+
+        // Queue the freed name for reuse by the next joiner. It was removed
+        // from _availableNames when assigned, so it lives here until reclaimed.
+        _recycledNames.Add(name);
     }
 
     private void LogAssignments()

@@ -38,6 +38,15 @@ public class SessionUIBinder : MonoBehaviour
 
     void OnSessionAdded(ISession session)
     {
+        // SessionAdded can fire more than once for the same session; starting NGO twice
+        // throws "Cannot start Host while an instance is already running". Bail if we're
+        // already listening so the first (correct) start wins.
+        if (NetworkManager.Singleton.IsListening)
+        {
+            Debug.LogWarning("SessionUIBinder: NGO already running; ignoring duplicate SessionAdded.");
+            return;
+        }
+
         if (session != null && session.IsHost)
             NetworkManager.Singleton.StartHost();
         else

@@ -109,6 +109,18 @@ public class MeatballPhysicsController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        // NGO applies the connection-approval spawn position to the Transform, but an
+        // interpolated non-kinematic Rigidbody doesn't reliably adopt a bare transform
+        // teleport on the spawn frame — it keeps (and falls from) the prefab's authored
+        // pose. Snap the physics body to the spawned transform so the host lands at
+        // HostInitialSpawnPosition. Only the machines that own a dynamic body need this;
+        // remote-owner ghosts are kinematic and snapshot-driven.
+        if (IsServer || IsOwner)
+        {
+            _rb.position = transform.position;
+            _rb.rotation = transform.rotation;
+        }
+
         if (IsServer)
         {
             ServerInstances.Add(this);

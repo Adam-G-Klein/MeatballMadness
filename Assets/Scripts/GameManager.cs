@@ -15,9 +15,7 @@ public class GameManager : MonoBehaviour, InputSystem_Actions.IPlayerActions
              "clients spawn above the host player.")]
     [SerializeField] private float _spawnYOffset = 2f;
 
-    [Tooltip("Position used for the very first player (the host itself), since " +
-             "there is no existing host player to offset from yet.")]
-    [SerializeField] private Vector3 _hostSpawnPosition = Vector3.zero;
+    private const string HostSpawnPositionName = "HostInitialSpawnPosition";
 
     private InputSystem_Actions _actions;
 
@@ -50,19 +48,51 @@ public class GameManager : MonoBehaviour, InputSystem_Actions.IPlayerActions
         response.Approved = true;
         response.CreatePlayerObject = true;
 
+        Debug.Log($"[Approval] IsServer={NetworkManager.Singleton.IsServer} " +
+                  $"IsClient={NetworkManager.Singleton.IsClient} " +
+                  $"scene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name}");
+
         // The host connects first and has no host player to offset from yet —
         // place it at the configured base spawn position.
-        if (!TryGetHostPlayerTransform(out Vector3 hostPosition, out Quaternion hostRotation))
+        if(NetworkManager.Singleton.IsServer) {
+            if (TryGetHostInitialSpawnPosition(out Transform spawnTransform))
+            {
+                response.Position = spawnTransform.position;
+                response.Rotation = spawnTransform.rotation;
+            }
+        }
+        else if (NetworkManager.Singleton.IsClient)
         {
-            response.Position = _hostSpawnPosition;
-            response.Rotation = Quaternion.identity;
-            return;
+            if (TryGetHostPlayerTransform(out Vector3 hostPosition, out Quaternion hostRotation))
+            {
+                response.Position = hostPosition + new Vector3(0f, _spawnYOffset, 0f);
+                response.Rotation = hostRotation;
+            }
+        }
+        else {
+            Debug.LogError("GameManager: Invalid connection state.");
         }
 
-        // Remote client: spawn at the host player's exact world location, lifted
-        // along Y so it appears above the host.
-        response.Position = hostPosition + new Vector3(0f, _spawnYOffset, 0f);
-        response.Rotation = hostRotation;
+        Debug.Log($"[Approval] resolved Position={response.Position?.ToString() ?? "null"} " +
+                  $"Rotation={response.Rotation?.eulerAngles.ToString() ?? "null"}");
+    }
+
+    /// <summary>
+    /// Finds the scene's host spawn marker. Re-queried each use because this
+    /// component lives on a DontDestroyOnLoad object while the marker is per-scene.
+    /// </summary>
+    private bool TryGetHostInitialSpawnPosition(out Transform spawnTransform)
+    {
+        var spawnGo = GameObject.Find(HostSpawnPositionName);
+        if (spawnGo == null)
+        {
+            Debug.LogError($"GameManager: Could not find '{HostSpawnPositionName}' in the scene.");
+            spawnTransform = null;
+            return false;
+        }
+
+        spawnTransform = spawnGo.transform;
+        return true;
     }
 
     /// <summary>
