@@ -191,6 +191,151 @@ Shader "Meatball/SpaghettiNoodle"
             ENDHLSL
         }
 
+        // DepthNormals prepass — REQUIRED for the screen-space outline feature.
+        // ScreenOutlineFeature requests Depth|Normal, which URP fulfills with a
+        // single DepthNormals prepass. Objects lacking this pass are absent from
+        // BOTH the depth and normals textures, so the outline can't see them.
+        // We reconstruct the same faked cylinder normal as ForwardLit so that
+        // normal-crease outlines follow the noodle's apparent round silhouette
+        // rather than the flat ribbon geometry.
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            ZWrite On
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex   DepthNormalsVert
+            #pragma fragment DepthNormalsFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            CBUFFER_START(UnityPerMaterial)
+                half4  _BaseColor;
+                half   _AmbientBoost;
+                half4  _SpecColor;
+                half   _SpecPower;
+                half   _SpecStrength;
+                half4  _RimColor;
+                half   _RimPower;
+                half   _RimStrength;
+                half   _CylinderBlend;
+            CBUFFER_END
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+                float4 tangentOS  : TANGENT;
+                float2 uv         : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float2 uv          : TEXCOORD0;
+                float3 normalWS    : TEXCOORD1;
+                float3 tangentWS   : TEXCOORD2;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            Varyings DepthNormalsVert(Attributes IN)
+            {
+                UNITY_SETUP_INSTANCE_ID(IN);
+                Varyings OUT;
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
+
+                VertexPositionInputs vpi = GetVertexPositionInputs(IN.positionOS.xyz);
+                VertexNormalInputs   vni = GetVertexNormalInputs(IN.normalOS, IN.tangentOS);
+
+                OUT.positionHCS = vpi.positionCS;
+                OUT.uv          = IN.uv;
+                OUT.normalWS    = vni.normalWS;
+                OUT.tangentWS   = vni.tangentWS;
+                return OUT;
+            }
+
+            half4 DepthNormalsFrag(Varyings IN) : SV_Target
+            {
+                // Same view-independent cylinder normal as the ForwardLit pass.
+                float3 T        = normalize(IN.tangentWS);
+                float3 worldUp  = float3(0, 1, 0);
+                float3 cylUp    = normalize(worldUp - T * dot(T, worldUp));
+                float3 cylRight = normalize(cross(T, cylUp));
+
+                float  nx = IN.uv.y * 2.0 - 1.0;
+                float  nz = sqrt(max(0.0001, 1.0 - nx * nx));
+
+                float3 cylinderN = normalize(cylUp * nz + cylRight * nx);
+                float3 N = normalize(lerp(IN.normalWS, cylinderN, _CylinderBlend));
+
+                // URP stores world-space normals in _CameraNormalsTexture.
+                return half4(N, 0.0);
+            }
+            ENDHLSL
+        }
+
+        // DepthOnly prepass — used when a pass requests depth without normals.
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+
+            ZWrite On
+            ColorMask R
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex   DepthOnlyVert
+            #pragma fragment DepthOnlyFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            // Identical UnityPerMaterial layout across all passes keeps the
+            // shader SRP Batcher-compatible, even though DepthOnly reads none of it.
+            CBUFFER_START(UnityPerMaterial)
+                half4  _BaseColor;
+                half   _AmbientBoost;
+                half4  _SpecColor;
+                half   _SpecPower;
+                half   _SpecStrength;
+                half4  _RimColor;
+                half   _RimPower;
+                half   _RimStrength;
+                half   _CylinderBlend;
+            CBUFFER_END
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            Varyings DepthOnlyVert(Attributes IN)
+            {
+                UNITY_SETUP_INSTANCE_ID(IN);
+                Varyings OUT;
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
+                OUT.positionHCS = GetVertexPositionInputs(IN.positionOS.xyz).positionCS;
+                return OUT;
+            }
+
+            half4 DepthOnlyFrag(Varyings IN) : SV_Target
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
+
         // Shadow caster pass so the noodle casts shadows
         UsePass "Universal Render Pipeline/Lit/ShadowCaster"
     }

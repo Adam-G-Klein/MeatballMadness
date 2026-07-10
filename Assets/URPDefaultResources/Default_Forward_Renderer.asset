@@ -15,7 +15,7 @@ MonoBehaviour:
   m_Active: 1
   iterations: 4
   downsample: 2
-  enableMipMaps: 1
+  enableMipMaps: 0
   scale: 1
   offset: 1
   scaleBlurWith: 1
@@ -23,6 +23,22 @@ MonoBehaviour:
   blurType: 0
   injectionPoint: 600
   shader: {fileID: 4800000, guid: bb11bdc2e8aaf4c80b5315f3778d7ad4, type: 3}
+--- !u!114 &-326026047064359388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b0fe297545d34f4099672956512ac8b, type: 3}
+  m_Name: DitherFeature
+  m_EditorClassIdentifier: Assembly-CSharp::DitherFeature
+  m_Active: 0
+  _settings: {fileID: 11400000, guid: e4095219aa3384656bdb09cdc9ef8d51, type: 2}
+  _injectionPoint: 600
+  _shader: {fileID: 4800000, guid: b43979920ada94abb801a4ad7869aa2f, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -49,8 +65,11 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 5280242033642886862}
+  - {fileID: 3004641145063460664}
+  - {fileID: 3101509223725750507}
   - {fileID: -9165188090858820013}
-  m_RendererFeatureMap: ced65e5727304749532eb898fdb5ce80
+  - {fileID: -326026047064359388}
+  m_RendererFeatureMap: ced65e572730474938cf07c133a1b229eb58c5db34c60a2b532eb898fdb5ce80243e349d09b979fb
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -79,6 +98,40 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &3004641145063460664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b71ae30893f394f24b306fb2e7c3d9ff, type: 3}
+  m_Name: PosterizeFeature
+  m_EditorClassIdentifier: Assembly-CSharp::PosterizeFeature
+  m_Active: 1
+  _settings: {fileID: 11400000, guid: 721de76faedc4be08d9da2d697858f60, type: 2}
+  _injectionPoint: 600
+  _shader: {fileID: 4800000, guid: 5e0432f006f62466cb18d81ce1e5b123, type: 3}
+--- !u!114 &3101509223725750507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0e682e501d9547489b3f3c2b7f46425, type: 3}
+  m_Name: ScreenOutlineFeature
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenOutlineFeature
+  m_Active: 1
+  _depthOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
+  _normalOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
+  _outlineAgainstSky: 1
+  _injectionPoint: 600
+  _shader: {fileID: 4800000, guid: 3d089ab0f4653415e90e7063e18e7bcd, type: 3}
 --- !u!114 &5280242033642886862
 MonoBehaviour:
   m_ObjectHideFlags: 0
