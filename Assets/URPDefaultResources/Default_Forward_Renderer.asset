@@ -110,7 +110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b71ae30893f394f24b306fb2e7c3d9ff, type: 3}
   m_Name: PosterizeFeature
   m_EditorClassIdentifier: Assembly-CSharp::PosterizeFeature
-  m_Active: 1
+  m_Active: 0
   _settings: {fileID: 11400000, guid: 721de76faedc4be08d9da2d697858f60, type: 2}
   _injectionPoint: 600
   _shader: {fileID: 4800000, guid: 5e0432f006f62466cb18d81ce1e5b123, type: 3}
@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0e682e501d9547489b3f3c2b7f46425, type: 3}
   m_Name: ScreenOutlineFeature
   m_EditorClassIdentifier: Assembly-CSharp::ScreenOutlineFeature
-  m_Active: 1
+  m_Active: 0
   _depthOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
   _normalOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
   _outlineAgainstSky: 1

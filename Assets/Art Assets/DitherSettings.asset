@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: DitherSettings
   m_EditorClassIdentifier: Assembly-CSharp::DitherSettings
   posterize: {fileID: 11400000, guid: 721de76faedc4be08d9da2d697858f60, type: 2}
-  bayerSize: 1
+  bayerSize: 2
   spread: 0.08
   patternScale: 2
