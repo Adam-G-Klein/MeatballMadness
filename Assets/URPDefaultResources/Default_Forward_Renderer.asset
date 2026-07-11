@@ -23,6 +23,43 @@ MonoBehaviour:
   blurType: 0
   injectionPoint: 600
   shader: {fileID: 4800000, guid: bb11bdc2e8aaf4c80b5315f3778d7ad4, type: 3}
+--- !u!114 &-4185294670545773100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13d6695beca3e47dc9e2a76799280c3f, type: 3}
+  m_Name: DerezFeature
+  m_EditorClassIdentifier: Assembly-CSharp::DerezFeature
+  m_Active: 1
+  _pixelSize: 3
+  _injectionPoint: 600
+  _shader: {fileID: 4800000, guid: d7d0bcb0298684d4ca0a2cc3821496d6, type: 3}
+--- !u!114 &-1510502195152459710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d25c6b95198b44c66945f40c4930c58d, type: 3}
+  m_Name: BloomFeature
+  m_EditorClassIdentifier: Assembly-CSharp::BloomFeature
+  m_Active: 1
+  _threshold: 0.761
+  _softKnee: 0.253
+  _intensity: 0.45
+  _scatter: 0.051
+  _tint: {r: 1, g: 1, b: 1, a: 1}
+  _iterations: 4
+  _injectionPoint: 600
+  _shader: {fileID: 4800000, guid: 5d6dfa1d3ec2842bb9dfd90bda752db9, type: 3}
 --- !u!114 &-326026047064359388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -66,10 +103,12 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: 5280242033642886862}
   - {fileID: 3004641145063460664}
+  - {fileID: -4185294670545773100}
   - {fileID: 3101509223725750507}
   - {fileID: -9165188090858820013}
   - {fileID: -326026047064359388}
-  m_RendererFeatureMap: ced65e572730474938cf07c133a1b229eb58c5db34c60a2b532eb898fdb5ce80243e349d09b979fb
+  - {fileID: -1510502195152459710}
+  m_RendererFeatureMap: ced65e572730474938cf07c133a1b229d49dc8f9abd8eac5eb58c5db34c60a2b532eb898fdb5ce80243e349d09b979fb42687da9419e09eb
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -126,10 +165,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0e682e501d9547489b3f3c2b7f46425, type: 3}
   m_Name: ScreenOutlineFeature
   m_EditorClassIdentifier: Assembly-CSharp::ScreenOutlineFeature
-  m_Active: 0
+  m_Active: 1
   _depthOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
   _normalOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
   _outlineAgainstSky: 1
+  _objectOverrides:
+  - label: 
+    layers:
+      serializedVersion: 2
+      m_Bits: 512
+    widthMultiplier: 0
+  - label: 
+    layers:
+      serializedVersion: 2
+      m_Bits: 384
+    widthMultiplier: 1.47
+  _maskShader: {fileID: 4800000, guid: 41afbef8a4f9a4453966e5cfb4fa82cb, type: 3}
   _injectionPoint: 600
   _shader: {fileID: 4800000, guid: 3d089ab0f4653415e90e7063e18e7bcd, type: 3}
 --- !u!114 &5280242033642886862

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OutlinePalette
   entries:
   - color: {r: 0.07, g: 0.05, b: 0.08, a: 1}
-    width: 5.54
+    width: 3
   depthThreshold: 0.03
   depthDistanceScale: 0.48
   grazingAngleCompensation: 50
-  normalThreshold: 0.482
+  normalThreshold: 2

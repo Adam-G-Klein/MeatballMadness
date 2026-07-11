@@ -44,6 +44,12 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
             TEXTURE2D_X_FLOAT(_SceneDepth);
             TEXTURE2D_X(_SceneNormals);
 
+            // Per-object outline width multiplier, R channel, default 1.0. Written by
+            // the feature's mask sub-pass (OutlineMaskWrite.shader) from the layer
+            // overrides. _UseOutlineMask is 0 when no overrides are configured.
+            TEXTURE2D_X_FLOAT(_OutlineMask);
+            int _UseOutlineMask;
+
             float4 _DepthPaletteLab[MAX_OUTLINE_ENTRIES];  // xyz = OkLab, w = width (px)
             float4 _DepthPaletteRgb[MAX_OUTLINE_ENTRIES];  // rgb = linear output color
             int _DepthPaletteCount;
@@ -61,12 +67,33 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
             int _OutlineAgainstSky;      // 1 = silhouettes against the skybox get depth outlines
             float4 _TexelSize;           // xy = 1/resolution, zw = resolution
 
+            // Set globally by DerezFeature when the derez (pixelation) pass is active.
+            // xy = block count across the screen; x < 1 means derez is off. Depth and
+            // normals aren't derez'd, so we snap every depth/normal sample to this grid
+            // to detect edges at block boundaries instead of the true (sub-block)
+            // silhouette. Without it the crisp outline hugs real geometry while the fill
+            // has snapped to block edges, leaving a gap of background between the two.
+            float4 _DerezParams;
+
             // Raw depth value that means "nothing was rendered here" (skybox).
             #if UNITY_REVERSED_Z
                 #define IS_SKY_DEPTH(raw) ((raw) <= 1.0e-7)
             #else
                 #define IS_SKY_DEPTH(raw) ((raw) >= 1.0 - 1.0e-7)
             #endif
+
+            // Snap a UV to the center of its derez block (no-op when derez is off), so
+            // depth/normal edge detection runs on the same quantized grid as the fill.
+            // Snapping after adding the kernel offset means a sample only jumps to a
+            // neighbor block once the offset crosses a block boundary — edges then land
+            // exactly on block edges, while the kernel offset itself stays in pixels so
+            // the outline band keeps its per-palette pixel width.
+            float2 SnapToDerezGrid(float2 uv)
+            {
+                if (_DerezParams.x < 1.0)
+                    return uv;
+                return (floor(uv * _DerezParams.xy) + 0.5) / _DerezParams.xy;
+            }
 
             // All sampling uses explicit LOD 0: several samples happen inside
             // divergent branches/loops where implicit-derivative sampling is undefined.
@@ -83,6 +110,15 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
             float4 SampleSceneColor(float2 uv)
             {
                 return SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, uv, 0);
+            }
+
+            // Outline width multiplier for the object at uv. 1.0 (no change) when the
+            // mask is disabled or the pixel wasn't drawn into it; 0.0 suppresses.
+            float SampleOutlineMultiplier(float2 uv)
+            {
+                if (_UseOutlineMask == 0)
+                    return 1.0;
+                return SAMPLE_TEXTURE2D_X_LOD(_OutlineMask, sampler_PointClamp, uv, 0).r;
             }
 
             int ClosestPaletteEntry(float3 lab, float4 paletteLab[MAX_OUTLINE_ENTRIES], int count)
@@ -109,10 +145,14 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
 
                 float4 sceneColor = SampleSceneColor(uv);
 
-                float rawCenter = SampleRawDepth(uv);
+                // Run all depth/normal reads on the derez grid (a no-op when derez is
+                // off) so detected edges align with the pixelated fill, not real geometry.
+                float2 duv = SnapToDerezGrid(uv);
+
+                float rawCenter = SampleRawDepth(duv);
                 bool centerIsSky = IS_SKY_DEPTH(rawCenter);
                 float eyeCenter = LinearEyeDepth(rawCenter, _ZBufferParams);
-                float3 normalCenter = centerIsSky ? float3(0.0, 0.0, 1.0) : SampleNormalWS(uv);
+                float3 normalCenter = centerIsSky ? float3(0.0, 0.0, 1.0) : SampleNormalWS(duv);
 
                 // Effective depth threshold for this fragment. Two compensations:
                 //  * distance: depth precision and per-pixel depth deltas both grow
@@ -124,7 +164,7 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
                 float depthEdgeThreshold = _DepthThreshold * (1.0 + _DepthDistanceScale * eyeCenter);
                 if (!centerIsSky)
                 {
-                    float3 positionWS = ComputeWorldSpacePosition(uv, rawCenter, UNITY_MATRIX_I_VP);
+                    float3 positionWS = ComputeWorldSpacePosition(duv, rawCenter, UNITY_MATRIX_I_VP);
                     float3 viewDir = normalize(_WorldSpaceCameraPos - positionWS);
                     float NdotV = saturate(dot(normalCenter, viewDir));
                     depthEdgeThreshold *= 1.0 + _GrazingCompensation * pow(1.0 - NdotV, 4.0);
@@ -136,7 +176,7 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
                 {
                     float edgeDist = 1e8;      // px distance to the nearest depth edge
                     float minEye = eyeCenter;  // closest depth found in the window...
-                    float2 minUV = uv;         // ...and where — that's the object we're outlining
+                    float2 minUV = duv;        // ...and where — that's the object we're outlining
 
                     [loop]
                     for (int dy = -_DepthSearchRadius; dy <= _DepthSearchRadius; dy++)
@@ -148,7 +188,7 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
                                 continue;
 
                             float2 offset = float2(dx, dy);
-                            float2 uvSample = uv + offset * _TexelSize.xy;
+                            float2 uvSample = SnapToDerezGrid(uv + offset * _TexelSize.xy);
                             float eyeSample = LinearEyeDepth(SampleRawDepth(uvSample), _ZBufferParams);
 
                             if (eyeSample < minEye)
@@ -170,7 +210,10 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
                         // closest (lowest-depth) sample in the window.
                         float3 objectLab = LinearSrgbToOkLab(SampleSceneColor(minUV).rgb);
                         int entry = ClosestPaletteEntry(objectLab, _DepthPaletteLab, _DepthPaletteCount);
-                        if (edgeDist <= _DepthPaletteLab[entry].w)
+                        // Width scaled by the outlined (near) object's per-object
+                        // multiplier. A multiplier of 0 collapses the band to nothing.
+                        float widthMul = SampleOutlineMultiplier(minUV);
+                        if (edgeDist <= _DepthPaletteLab[entry].w * widthMul)
                             return float4(_DepthPaletteRgb[entry].rgb, sceneColor.a);
                     }
                 }
@@ -190,7 +233,7 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
                                 continue;
 
                             float2 offset = float2(dx, dy);
-                            float2 uvSample = uv + offset * _TexelSize.xy;
+                            float2 uvSample = SnapToDerezGrid(uv + offset * _TexelSize.xy);
                             float rawSample = SampleRawDepth(uvSample);
                             if (IS_SKY_DEPTH(rawSample))
                                 continue;
@@ -212,7 +255,9 @@ Shader "Hidden/MeatballMadness/ScreenOutlineOkLab"
                         // Interior outlines match against the fragment's own color.
                         float3 lab = LinearSrgbToOkLab(sceneColor.rgb);
                         int entry = ClosestPaletteEntry(lab, _NormalPaletteLab, _NormalPaletteCount);
-                        if (edgeDist <= _NormalPaletteLab[entry].w)
+                        // Interior creases scale by this fragment's own object multiplier.
+                        float widthMul = SampleOutlineMultiplier(uv);
+                        if (edgeDist <= _NormalPaletteLab[entry].w * widthMul)
                             return float4(_NormalPaletteRgb[entry].rgb, sceneColor.a);
                     }
                 }

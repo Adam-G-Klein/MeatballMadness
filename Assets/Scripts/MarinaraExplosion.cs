@@ -47,6 +47,11 @@ public class MarinaraExplosion : MonoBehaviour
 
     private void Configure()
     {
+        // The prefab may have Play On Awake enabled, so the system can already be
+        // running when Awake() calls Configure(). Changing main.duration on a live
+        // system throws, so stop and clear it before reconfiguring.
+        _ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
         // ── Main ─────────────────────────────────────────────────────────────
         // PlayerMeatball scale = 2 (≈ 2-unit diameter sphere).
         // 10× that = 20 units. Speed + lifetime combo gives ~10-40 unit spread.
