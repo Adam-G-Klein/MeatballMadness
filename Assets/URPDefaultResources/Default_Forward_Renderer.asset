@@ -35,7 +35,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13d6695beca3e47dc9e2a76799280c3f, type: 3}
   m_Name: DerezFeature
   m_EditorClassIdentifier: Assembly-CSharp::DerezFeature
-  m_Active: 1
+  m_Active: 0
   _pixelSize: 3
   _injectionPoint: 600
   _shader: {fileID: 4800000, guid: d7d0bcb0298684d4ca0a2cc3821496d6, type: 3}
@@ -51,11 +51,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d25c6b95198b44c66945f40c4930c58d, type: 3}
   m_Name: BloomFeature
   m_EditorClassIdentifier: Assembly-CSharp::BloomFeature
-  m_Active: 1
-  _threshold: 0.761
+  m_Active: 0
+  _threshold: 0.709
   _softKnee: 0.253
-  _intensity: 0.45
-  _scatter: 0.051
+  _intensity: 0.47
+  _scatter: 0.364
   _tint: {r: 1, g: 1, b: 1, a: 1}
   _iterations: 4
   _injectionPoint: 600
@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0e682e501d9547489b3f3c2b7f46425, type: 3}
   m_Name: ScreenOutlineFeature
   m_EditorClassIdentifier: Assembly-CSharp::ScreenOutlineFeature
-  m_Active: 1
+  m_Active: 0
   _depthOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
   _normalOutlinePalette: {fileID: 11400000, guid: 99d90e168cb5b43f586ac139bbe107cb, type: 2}
   _outlineAgainstSky: 1
